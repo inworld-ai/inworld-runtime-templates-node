@@ -1,1 +1,0 @@
-# inworld-runtime-nodejs-templates
