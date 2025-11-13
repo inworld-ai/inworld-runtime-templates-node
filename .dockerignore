@@ -1,0 +1,23 @@
+# Ignore node_modules in all subdirectories
+**/node_modules
+**/.git
+**/.gitignore
+**/.env
+**/.DS_Store
+**/*.log
+**/dist
+**/build
+**/.cache
+**/coverage
+**/.vscode
+**/.idea
+
+# Specifically for voice_agent
+voice_agent/server/node_modules
+voice_agent/client/node_modules
+voice_agent/client/build
+voice_agent/client/dist
+
+# CLI node_modules
+cli/node_modules
+
