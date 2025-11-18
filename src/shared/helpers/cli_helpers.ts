@@ -1,7 +1,9 @@
 import { execSync } from 'child_process';
+import dotenv from 'dotenv';
 
 import { DEFAULT_LLM_MODEL_NAME, DEFAULT_LLM_PROVIDER } from '../constants';
 const minimist = require('minimist');
+dotenv.config();
 
 export function findNpxPath(): string {
   try {
