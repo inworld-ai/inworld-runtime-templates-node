@@ -45,7 +45,7 @@ function parseArgs() {
     let promptPath = path.join(
       __dirname,
       '..',
-      '..',
+      'shared',
       'prompts',
       'basic_prompt.jinja',
     );
@@ -59,7 +59,7 @@ function parseArgs() {
     let promptPropsPath = path.join(
       __dirname,
       '..',
-      '..',
+      'shared',
       'prompts',
       'basic_prompt_props.json',
     );

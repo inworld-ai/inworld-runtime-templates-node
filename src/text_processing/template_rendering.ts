@@ -41,7 +41,6 @@ async function run() {
   const customNode = new JinjaRenderNode();
   const prompt = readFileSync(args.prompt, 'utf8');
   const promptProps = readFileSync(args.promptProps, 'utf8');
-
   const graph = new GraphBuilder({
     id: 'custom_jinja_graph',
     enableRemoteConfig: false,
@@ -88,8 +87,7 @@ function parseArgs(): {
     let promptPath = path.join(
       __dirname,
       '..',
-      '..',
-      '..',
+      'shared',
       'prompts',
       'basic_prompt.jinja',
     );
@@ -103,8 +101,7 @@ function parseArgs(): {
     let promptPropsPath = path.join(
       __dirname,
       '..',
-      '..',
-      '..',
+      'shared',
       'prompts',
       'basic_prompt_props.json',
     );

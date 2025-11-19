@@ -5,8 +5,7 @@ import { InworldError } from '@inworld/runtime/common';
 import { DeviceRegistry, DeviceType } from '@inworld/runtime/core';
 import { VADFactory } from '@inworld/runtime/primitives/vad';
 import * as fs from 'fs';
-
-import { DEFAULT_VAD_MODEL_PATH } from '../shared/constants';
+import path from 'path';
 
 const minimist = require('minimist');
 const WavDecoder = require('wav-decoder');
@@ -29,7 +28,6 @@ async function run() {
   );
 
   let vad = await VADFactory.createLocal({ modelPath, device: found });
-
   const result = await vad.detectVoiceActivity({
     data: audioData.channelData[0],
     sampleRate: audioData.sampleRate,
@@ -54,8 +52,18 @@ function parseArgs(): {
   }
 
   const audioFilePath = argv.audioFilePath || '';
-  const modelPath = argv.modelPath || DEFAULT_VAD_MODEL_PATH;
+  let modelPath = argv.modelPath;
   const apiKey = process.env.INWORLD_API_KEY || '';
+
+  if (!modelPath) {
+    modelPath = path.join(
+      __dirname,
+      '..',
+      'shared',
+      'models',
+      'silero_vad.onnx',
+    );
+  }
 
   if (!audioFilePath) {
     throw new Error(`You need to provide a audioFilePath.\n${usage}`);
