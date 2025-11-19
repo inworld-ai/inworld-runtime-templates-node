@@ -148,13 +148,9 @@ npm install
 yarn install
 ```
 
-**Port Conflicts (Voice Agent)**
-
-The voice agent client will automatically pick the next available port if 3000 is taken.
-
 **Audio Issues**
 
-Grant microphone permissions in your browser for voice agent examples.
+Grant microphone permissions in your browser for voice examples.
 
 **Bug Reports**: [GitHub Issues](https://github.com/inworld-ai/inworld-runtime-templates-node/issues)
 
