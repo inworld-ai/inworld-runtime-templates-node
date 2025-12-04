@@ -39,7 +39,7 @@ Examples:
     yarn node-llm-chat "What is the weather in Vancouver?" --modelName="gpt-4o-mini" --provider="openai" --tools --toolChoice="get_weather"
     
     # Multimodal request with image
-    yarn node-llm-chat "What do you see in this image?" --modelName="gpt-4o" --provider="openai" --imageUrl="https://upload.wikimedia.org/wikipedia/en/a/a9/Example.jpg"
+    yarn node-llm-chat "What do you see in this image?" --modelName="gpt-4o" --provider="openai" --imageUrl="https://storage.googleapis.com/assets-inworld-ai/node-packages/Boletus_edulis_IT.jpg"
 
     # Request with response format
     yarn node-llm-chat "Generate a user profile for a software engineer. Include name, profession, experience_years, skills array, and location. return in json format" --modelName="gpt-4o-mini" --provider="openai" --responseFormat="json"

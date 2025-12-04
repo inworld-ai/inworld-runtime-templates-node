@@ -11,7 +11,7 @@ import {
 const minimist = require('minimist');
 
 // Helper to create tagged text objects
-const text = (txt: string) => ({ type: 'Text', data: { text: txt } });
+const text = (txt: string) => ({ _iw_type: 'Text', data: { text: txt } });
 
 class ReverseNode extends CustomNode {
   // Override to specify that this node outputs a Text stream
@@ -38,7 +38,7 @@ class JoinNode extends CustomNode {
   async process(
     _context: ProcessContext,
     textStream: GraphTypes.TextStream,
-  ): Promise<{ type: string; data: { text: string } }> {
+  ): Promise<{ _iw_type: string; data: { text: string } }> {
     console.log('\n=== Joining stream chunks ===');
     const results: string[] = [];
 
@@ -92,13 +92,13 @@ async function run() {
   // Tag the generator with 'Text' type
   // This tells toExternal() to create a DataStream<Text> which gets wrapped as TextStream
   const taggedStream = Object.assign(messageGenerator(), {
-    type: 'Text',
+    _iw_type: 'Text',
   });
 
   // const input = {
   //   type: 'DataStream',
   //   data: {},
-  //   _stream: taggedStream,
+  //   _iw_stream: taggedStream,
   // }
 
   // Create the nodes

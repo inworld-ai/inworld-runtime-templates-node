@@ -17,7 +17,7 @@ const audio = (data: Float32Array, sampleRate: number) => ({
 });
 
 // Helper to create tagged text objects
-const text = (txt: string) => ({ type: 'Text', data: { text: txt } });
+const text = (txt: string) => ({ _iw_type: 'Text', data: { text: txt } });
 
 /**
  * Producer node that generates a stream of audio chunks
@@ -132,7 +132,7 @@ class StatisticsNode extends CustomNode {
   async process(
     _context: ProcessContext,
     audioStream: GraphTypes.AudioChunkStream,
-  ): Promise<{ type: string; data: { text: string } }> {
+  ): Promise<{ _iw_type: string; data: { text: string } }> {
     console.log('\n=== Collecting statistics ===');
 
     let chunkCount = 0;

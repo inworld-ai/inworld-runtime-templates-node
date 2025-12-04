@@ -41,6 +41,17 @@ Alternatively, export the key as an environment variable:
 export INWORLD_API_KEY="your_api_key_here"
 ```
 
+#### Optional Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `INWORLD_ADDON_POOL_SIZE` | `64` | Thread pool size for native addon. Increase for high-concurrency workloads. |
+
+```bash
+# For running multiple concurrent graphs or load testing
+export INWORLD_ADDON_POOL_SIZE=128
+```
+
 ### Step 4: Run the Templates
 
 Run any template using the scripts defined in `package.json`:
