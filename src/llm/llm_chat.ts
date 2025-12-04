@@ -1,6 +1,10 @@
 import 'dotenv/config';
 
-import { stopInworldRuntime } from '@inworld/runtime';
+import {
+  LLMChatRequestInterface,
+  LLMMessageInterface,
+  stopInworldRuntime,
+} from '@inworld/runtime';
 import {
   GraphBuilder,
   GraphTypes,
@@ -39,7 +43,7 @@ Examples:
     yarn node-llm-chat "What is the weather in Vancouver?" --modelName="gpt-4o-mini" --provider="openai" --tools --toolChoice="get_weather"
     
     # Multimodal request with image
-    yarn node-llm-chat "What do you see in this image?" --modelName="gpt-4o" --provider="openai" --imageUrl="https://storage.googleapis.com/assets-inworld-ai/node-packages/Boletus_edulis_IT.jpg"
+    yarn node-llm-chat "What do you see in this image?" --modelName="gpt-4o" --provider="openai" --imageUrl="https://upload.wikimedia.org/wikipedia/en/a/a9/Example.jpg"
 
     # Request with response format
     yarn node-llm-chat "Generate a user profile for a software engineer. Include name, profession, experience_years, skills array, and location. return in json format" --modelName="gpt-4o-mini" --provider="openai" --responseFormat="json"
@@ -214,19 +218,19 @@ function createMessages(
   prompt: string,
   imageUrl?: string,
   toolCallHistory?: boolean,
-) {
-  const systemMessage = {
+): LLMChatRequestInterface {
+  const systemMessage: LLMMessageInterface = {
     role: 'system',
     content:
       'You are a helpful assistant that can use tools when needed. When analyzing images, describe what you see and use appropriate tools if calculations or weather information is needed.',
   };
 
-  const previousUserMessage = {
+  const previousUserMessage: LLMMessageInterface = {
     role: 'user',
     content: 'Hi please call the calculator tool to calculate 2 + 2',
   };
 
-  const firstAssistantMessage = {
+  const firstAssistantMessage: LLMMessageInterface = {
     role: 'assistant',
     content: '',
     toolCalls: [
@@ -238,25 +242,24 @@ function createMessages(
     ],
   };
 
-  const toolMessage = {
+  const toolMessage: LLMMessageInterface = {
     role: 'tool',
     toolCallId: '1',
     content: '5',
   };
 
-  let userMessage;
+  let userMessage: LLMMessageInterface;
   if (imageUrl) {
     console.log('imageUrl', imageUrl);
     userMessage = {
       role: 'user',
-      content: [
+      content: prompt,
+      contentItems: [
         {
-          type: 'text' as const,
           text: prompt,
         },
         {
-          type: 'image' as const,
-          image_url: {
+          image: {
             url: imageUrl,
             detail: 'high',
           },
@@ -301,7 +304,7 @@ function createMessagesWithTools(
 
   const result: any = {
     messages,
-    tools: TOOLS,
+    tools: TOOLS.map(normalizeToolDefinition),
   };
 
   if (toolChoice) {
@@ -311,12 +314,14 @@ function createMessagesWithTools(
       toolChoice === 'none'
     ) {
       result.toolChoice = {
-        choice: toolChoice,
+        type: toolChoice,
       };
     } else {
       // Assume it's a specific function name
       result.toolChoice = {
-        choice: {
+        type: 'function',
+        function: {
+          type: 'function',
           name: toolChoice,
         },
       };
@@ -324,6 +329,19 @@ function createMessagesWithTools(
   }
 
   return result;
+}
+
+function normalizeToolDefinition(tool: any) {
+  if (!tool) {
+    return tool;
+  }
+  if (tool.properties !== undefined && typeof tool.properties !== 'string') {
+    return {
+      ...tool,
+      properties: JSON.stringify(tool.properties),
+    };
+  }
+  return tool;
 }
 
 function parseArgs(): {

@@ -7,12 +7,18 @@ import * as path from 'path';
 import { v7 } from 'uuid';
 
 const promptTemplate = fs.readFileSync(
-  path.resolve(__dirname, 'fixtures/intent_matching_prompt_template.txt'),
+  path.resolve(
+    __dirname,
+    '../shared/fixtures/intent_matching_prompt_template.txt',
+  ),
   'utf-8',
 );
 
 const DEFAULT_INTENTS = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, 'fixtures/intents.json'), 'utf-8'),
+  fs.readFileSync(
+    path.resolve(__dirname, '../shared/fixtures/intents.json'),
+    'utf-8',
+  ),
 );
 
 const minimist = require('minimist');

@@ -30,6 +30,7 @@ import {
 const OUTPUT_DIRECTORY = path.join(
   __dirname,
   '..',
+  '..',
   'data-output',
   'tts_samples',
 );
@@ -57,7 +58,6 @@ class NodePromptBuilder extends CustomNode {
           content: input.text,
         },
       ],
-      responseFormat: ResponseFormatName.Text,
     });
   }
 }
@@ -69,7 +69,7 @@ class TTSRequestBuilderNode extends CustomNode {
     textStream: GraphTypes.TextStream,
   ): GraphTypes.TTSRequest {
     return GraphTypes.TTSRequest.withStream(textStream, {
-      speakerId: input.voiceName,
+      id: input.voiceName,
     });
   }
 }

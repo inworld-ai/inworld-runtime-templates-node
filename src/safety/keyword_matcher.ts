@@ -9,15 +9,15 @@ const minimist = require('minimist');
 
 const DEFAULT_KEYWORD_MATCHER_PROFANITY_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/profanity.json',
+  '../shared/fixtures/profanity.json',
 );
 const DEFAULT_KEYWORD_MATCHER_ADULT_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/adult.json',
+  '../shared/fixtures/adult.json',
 );
 const DEFAULT_KEYWORD_MATCHER_SUBSTANCE_USE_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/substance_use.json',
+  '../shared/fixtures/substance_use.json',
 );
 
 const usage = `
@@ -36,9 +36,9 @@ Examples:
 
     # Test with custom keyword files
     yarn node-keyword-matcher "Let's do drugs" \\
-      --profanityPath="safety/fixtures/profanity.json" \\
-      --adultPath="safety/fixtures/adult.json" \\
-      --substancePath="safety/fixtures/substance_use.json"
+      --profanityPath="src/shared/fixtures/profanity.json" \\
+      --adultPath="src/shared/fixtures/adult.json" \\
+      --substancePath="src/shared/fixtures/substance_use.json"
 `;
 
 run();

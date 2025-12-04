@@ -35,6 +35,7 @@ import {
 const OUTPUT_DIRECTORY = path.join(
   __dirname,
   '..',
+  '..',
   'data-output',
   'character_generator_dsl_samples',
 );
@@ -544,15 +545,15 @@ class CharacterGeneratorDSLGraph {
     // Create flow edges
     this.graphBuilder
       .addEdge(inputRouterNode, assetsFetcherNode, {
-        conditionExpression: 'input.value.type == "instruct"',
+        conditionExpression: 'input.type == "instruct"',
       })
       .addEdge(assetsFetcherNode, llmAssetsNode)
       .addEdge(inputRouterNode, questFetcherNode, {
-        conditionExpression: 'input.value.type == "instruct"',
+        conditionExpression: 'input.type == "instruct"',
       })
       .addEdge(questFetcherNode, llmQuestsNode)
       .addEdge(inputRouterNode, stateCollectorNode, {
-        conditionExpression: 'input.value.type == "instruct"',
+        conditionExpression: 'input.type == "instruct"',
       })
       .addEdge(llmAssetsNode, stateCollectorNode)
       .addEdge(llmQuestsNode, stateCollectorNode)
@@ -562,10 +563,10 @@ class CharacterGeneratorDSLGraph {
     // Select flow edges
     this.graphBuilder
       .addEdge(inputRouterNode, characterSelectorNode, {
-        conditionExpression: 'input.value.type == "select"',
+        conditionExpression: 'input.type == "select"',
       })
       .addEdge(characterSelectorNode, ttsTextExtractorNode, {
-        conditionExpression: 'input.value.name != ""',
+        conditionExpression: 'input.name != ""',
       })
       .addEdge(ttsTextExtractorNode, ttsNode, {
         optional: true,
@@ -574,7 +575,7 @@ class CharacterGeneratorDSLGraph {
     // Chat flow edges
     this.graphBuilder
       .addEdge(inputRouterNode, responseGeneratorNode, {
-        conditionExpression: 'input.value.type == "chat"',
+        conditionExpression: 'input.type == "chat"',
       })
       .addEdge(responseGeneratorNode, llmNode)
       .addEdge(llmNode, textAggregatorNode)
@@ -584,7 +585,7 @@ class CharacterGeneratorDSLGraph {
         optional: true,
       })
       .addEdge(inputRouterNode, historyLoggerNode, {
-        conditionExpression: 'input.value.type == "chat"',
+        conditionExpression: 'input.type == "chat"',
       });
 
     // Set start and end nodes

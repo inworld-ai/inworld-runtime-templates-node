@@ -1,0 +1,14 @@
+Below are newly extracted facts from a dialogue.
+These facts are organized by the topic "{{topic}}" and are presented in chronological order.
+{{#if longTermMemoryItem}}
+Summarize them in a few sentences taking into account the long-term memory to create an updated, understandable memory.
+{{/if}}
+Do not include any general information in the summary or start with "the new facts".
+{{#if longTermMemoryItem}}
+Existing Long-Term Memory:
+{{longTermMemoryItem}}
+{{/if}}
+List of new facts:
+{{flashMemoryList}}
+Please summarize this list of facts in the few sentences.
+

@@ -10,9 +10,6 @@ import {
 
 const minimist = require('minimist');
 
-// Helper to create tagged text objects
-const text = (txt: string) => ({ _iw_type: 'Text', data: { text: txt } });
-
 /**
  * Producer node that generates a stream of text chunks
  */
@@ -33,8 +30,7 @@ class TextProducerNode extends CustomNode {
     console.log('\n=== Producing text chunks ===');
     for (const message of this.messages) {
       console.log(`  Yielding: "${message}"`);
-      //yield message;
-      yield text(message);
+      yield message;
     }
   }
 }
@@ -56,7 +52,7 @@ class ReverseNode extends CustomNode {
       const txt = chunk.text;
       const reversed = txt.split('').reverse().join('');
       console.log(`  "${txt}" → "${reversed}"`);
-      yield text(reversed);
+      yield reversed;
     }
   }
 }
@@ -68,7 +64,7 @@ class JoinNode extends CustomNode {
   async process(
     _context: ProcessContext,
     textStream: GraphTypes.TextStream,
-  ): Promise<{ _iw_type: string; data: { text: string } }> {
+  ): Promise<string> {
     console.log('\n=== Joining stream chunks ===');
     const results: string[] = [];
 
@@ -81,7 +77,7 @@ class JoinNode extends CustomNode {
 
     const joined = results.join(' | ');
     console.log(`  Final joined text: "${joined}"`);
-    return text(joined);
+    return joined;
   }
 }
 

@@ -7,8 +7,8 @@ import {
   GraphTypes,
   ProcessContext,
 } from '@inworld/runtime/graph';
-import { renderJinja } from '@inworld/runtime/primitives/llm';
-import { readFileSync } from 'fs';
+import { PromptBuilder } from '@inworld/runtime/primitives/llm';
+import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
 
 const minimist = require('minimist');
@@ -18,7 +18,11 @@ class JinjaRenderNode extends CustomNode {
     context: ProcessContext,
     opts: GraphTypes.Custom<{ prompt: string; promptProps: string }>,
   ): Promise<GraphTypes.Custom> {
-    return { renderedPrompt: await renderJinja(opts.prompt, opts.promptProps) };
+    const builder = await PromptBuilder.create(opts.prompt);
+    const variables = JSON.parse(opts.promptProps);
+    const renderedPrompt = await builder.build(variables);
+
+    return { renderedPrompt };
   }
 }
 
@@ -38,9 +42,26 @@ run();
 async function run() {
   const args = parseArgs();
 
+  // Validate prompt file path
+  if (!existsSync(args.prompt)) {
+    console.error(
+      `\x1b[31mError: Prompt file not found: ${args.prompt}\x1b[0m`,
+    );
+    process.exit(1);
+  }
+
+  // Validate prompt props file path
+  if (!existsSync(args.promptProps)) {
+    console.error(
+      `\x1b[31mError: Prompt props file not found: ${args.promptProps}\x1b[0m`,
+    );
+    process.exit(1);
+  }
+
   const customNode = new JinjaRenderNode();
   const prompt = readFileSync(args.prompt, 'utf8');
   const promptProps = readFileSync(args.promptProps, 'utf8');
+
   const graph = new GraphBuilder({
     id: 'custom_jinja_graph',
     enableRemoteConfig: false,
