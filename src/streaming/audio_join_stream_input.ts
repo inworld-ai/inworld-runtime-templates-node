@@ -16,7 +16,7 @@ const audio = (data: Float32Array, sampleRate: number) => ({
   data: { data: Array.from(data), sampleRate },
 });
 
-const text = (txt: string) => ({ type: 'Text', data: { text: txt } });
+const text = (txt: string) => ({ _iw_type: 'Text', data: { text: txt } });
 
 /**
  * Consumer node that reads an AudioChunkStream (from graph input), joins every 2 chunks, and outputs results
@@ -82,7 +82,7 @@ class StatisticsNode extends CustomNode {
   async process(
     _context: ProcessContext,
     audioStream: GraphTypes.AudioChunkStream,
-  ): Promise<{ type: string; data: { text: string } }> {
+  ): Promise<{ _iw_type: string; data: { text: string } }> {
     console.log('\n=== Collecting statistics ===');
 
     let chunkCount = 0;
@@ -165,13 +165,13 @@ async function run() {
   // Tag the generator with 'Audio' type
   // This tells toExternal() to create a DataStream<Audio> which gets wrapped as AudioChunkStream
   const taggedStream = Object.assign(audioGenerator(), {
-    type: 'Audio',
+    _iw_type: 'Audio',
   });
 
   // const input = {
   //   type: 'DataStream',
   //   data: {},
-  //   _stream: taggedStream,
+  //   _iw_stream: taggedStream,
   // };
 
   // Create the nodes

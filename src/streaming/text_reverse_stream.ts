@@ -11,7 +11,7 @@ import {
 const minimist = require('minimist');
 
 // Helper to create tagged text objects
-const text = (txt: string) => ({ type: 'Text', data: { text: txt } });
+const text = (txt: string) => ({ _iw_type: 'Text', data: { text: txt } });
 
 /**
  * Producer node that generates a stream of text chunks
@@ -68,7 +68,7 @@ class JoinNode extends CustomNode {
   async process(
     _context: ProcessContext,
     textStream: GraphTypes.TextStream,
-  ): Promise<{ type: string; data: { text: string } }> {
+  ): Promise<{ _iw_type: string; data: { text: string } }> {
     console.log('\n=== Joining stream chunks ===');
     const results: string[] = [];
 

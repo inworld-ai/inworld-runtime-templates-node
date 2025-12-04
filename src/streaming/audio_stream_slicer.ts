@@ -16,7 +16,7 @@ const audio = (data: Float32Array, sampleRate: number) => ({
   data: { data: Array.from(data), sampleRate },
 });
 
-const text = (txt: string) => ({ type: 'Text', data: { text: txt } });
+const text = (txt: string) => ({ _iw_type: 'Text', data: { text: txt } });
 
 /**
  * Audio Stream Slicer Node - Loop Implementation with DataStreamWithMetadata
@@ -213,7 +213,7 @@ async function run() {
 
   // Tag the generator with 'Audio' type
   const taggedStream = Object.assign(audioGenerator(), {
-    type: 'Audio',
+    _iw_type: 'Audio',
   });
 
   // Create the nodes

@@ -1,10 +1,13 @@
 {
   "name": "@inworld/runtime-templates",
+  "version": "0.8.2-rc2",
   "license": "SEE LICENSE IN LICENSE.md and LICENSE-CPP-BINARIES.md",
   "scripts": {
     "basic-embedder": "ts-node src/primitives/basic_embedder.ts",
     "basic-ner": "ts-node src/primitives/basic_ner.ts",
     "basic-vad": "ts-node src/primitives/basic_vad.ts",
+    "basic-llm": "ts-node src/primitives/basic_llm.ts",
+    "basic-tts": "ts-node src/primitives/basic_tts.ts",
     "basic-jinja-template": "ts-node src/primitives/basic_jinja_template.ts",
     "node-llm-chat": "ts-node src/llm/llm_chat.ts",
     "node-llm-chat-explicit-component": "ts-node src/llm/llm_with_components.ts",
@@ -57,12 +60,11 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@inworld/runtime": "^0.8.0",
+    "@inworld/runtime": "0.8.0",
     "dotenv": "^16.0.1",
     "minimist": "^1.2.8",
     "uuid": "^11.1.0",
     "wav-decoder": "^1.3.0",
     "wav-encoder": "^1.3.0"
-  },
-  "version": "0.8.0-rc.17"
+  }
 }

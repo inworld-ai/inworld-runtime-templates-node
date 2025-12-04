@@ -23,7 +23,11 @@ async function run() {
   const { audioFilePath, apiKey } = parseArgs();
 
   const audioData = await WavDecoder.decode(fs.readFileSync(audioFilePath));
-  const sttNode = new RemoteSTTNode();
+  const sttNode = new RemoteSTTNode({
+    sttConfig: {
+      languageCode: 'en-US',
+    },
+  });
 
   const graph = new GraphBuilder({
     id: 'node_stt_graph',

@@ -12,7 +12,7 @@ import {
 const minimist = require('minimist');
 
 // Helper to create tagged text objects
-const text = (txt: string) => ({ type: 'Text', data: { text: txt } });
+const text = (txt: string) => ({ _iw_type: 'Text', data: { text: txt } });
 
 /**
  * String Stream Slicer Node - Loop Implementation with DataStreamWithMetadata
@@ -145,7 +145,7 @@ async function run() {
 
   // Tag the generator with 'Text' type
   const taggedStream = Object.assign(messageGenerator(), {
-    type: 'Text',
+    _iw_type: 'Text',
   });
 
   // Create the nodes
