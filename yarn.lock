@@ -159,10 +159,9 @@
     fastify "^5.2.0"
     protobufjs "^7.4.0"
 
-"@inworld/runtime@0.8.0":
-  version "0.8.0"
-  resolved "https://registry.yarnpkg.com/@inworld/runtime/-/runtime-0.8.0.tgz#333e7d96499497681dd83b1a6e35566a4cc98abd"
-  integrity sha512-bSOydjXGiuSTm8BZ1t/dsUOK7l/WCseHjNRCMdHUFkevDzbGXHPaf7jQEPM3r4c4nyRiVabjHpi2zvLSCa+jWw==
+"@inworld/runtime@https://assets.inworld.ai/node-packages/inworld-runtime-0.8.2-rc3.tgz":
+  version "0.8.2-rc3"
+  resolved "https://assets.inworld.ai/node-packages/inworld-runtime-0.8.2-rc3.tgz#8fb42c72fe9a5a5d0ed35f63681bf418980e07f1"
   dependencies:
     "@inworld/graph-server" "0.8.0"
     "@types/lodash.snakecase" "^4.1.9"
