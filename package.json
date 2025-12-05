@@ -60,7 +60,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@inworld/runtime": "0.8.0",
+    "@inworld/runtime": "https://assets.inworld.ai/node-packages/inworld-runtime-0.8.2-rc3.tgz",
     "dotenv": "^16.0.1",
     "minimist": "^1.2.8",
     "uuid": "^11.1.0",
