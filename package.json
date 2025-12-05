@@ -1,6 +1,6 @@
 {
   "name": "@inworld/runtime-templates",
-  "version": "0.8.2-rc2",
+  "version": "0.8.2-rc3",
   "license": "SEE LICENSE IN LICENSE.md and LICENSE-CPP-BINARIES.md",
   "scripts": {
     "basic-embedder": "ts-node src/primitives/basic_embedder.ts",
