@@ -4,9 +4,9 @@ Templates for building AI applications with the Inworld Runtime SDK. From simple
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
 - npm or Yarn
-- An Inworld AI account and API key
+- Node.js v20 or higher: [Download here](https://nodejs.org/en/download)
+- Inworld API key (required): [Sign up here](https://platform.inworld.ai/signup) or see [quickstart guide](/docs/node/authentication#getting-an-api-key)
 
 ## Get Started
 
