@@ -55,6 +55,7 @@ async function run() {
         {
           role: 'user',
           content: prompt,
+          toolCallId: '', // Required by schema, empty for user messages
         },
       ],
     }),
