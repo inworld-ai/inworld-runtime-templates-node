@@ -21,6 +21,7 @@ import {
 const OUTPUT_DIRECTORY = path.join(
   __dirname,
   '..',
+  '..',
   'data-output',
   'tts_samples',
 );
@@ -35,10 +36,12 @@ class CustomStreamReaderNode extends CustomNode {
     _context: ProcessContext,
     input: GraphTypes.TTSOutputStream,
   ): Promise<{ initialText: string; audio: string }> {
+    console.log('input', input);
     let initialText = '';
     const audioBuffers: Buffer[] = [];
 
     for await (const chunk of input) {
+      console.log('chunk', chunk);
       if (chunk.text) initialText += chunk.text;
       if (chunk.audio?.data) {
         const buffer = Buffer.from(chunk.audio?.data, 'base64');
@@ -62,7 +65,8 @@ class CustomStreamReaderNode extends CustomNode {
     }
 
     fs.writeFileSync(OUTPUT_PATH, Buffer.from(buffer));
-
+    console.log('from custom node process: ');
+    console.log('initialText: ', initialText);
     return { initialText, audio: OUTPUT_PATH };
   }
 }

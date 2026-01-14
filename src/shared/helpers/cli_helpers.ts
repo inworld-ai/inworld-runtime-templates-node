@@ -46,7 +46,7 @@ export function parseArgs(
   const modelName = argv.modelName || DEFAULT_LLM_MODEL_NAME;
   const provider = argv.provider || DEFAULT_LLM_PROVIDER;
   const apiKey = process.env.INWORLD_API_KEY || process.env.API_KEY || '';
-  const stream = argv.stream !== 'false';
+  const stream = argv?.stream !== 'false';
   const port = argv.port || 8080;
 
   if (!prompt && !opts?.skipPrompt) {
