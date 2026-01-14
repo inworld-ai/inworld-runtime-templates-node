@@ -51,6 +51,9 @@ async function run() {
       string: (text: string) => {
         console.log(`  Template: Result: ${text}`);
       },
+      Content: (content: GraphTypes.Content) => {
+        console.log(`  Template: Result: ${content.content}`);
+      },
       TextStream: async (textStream: GraphTypes.TextStream) => {
         let resultCount = 0;
         console.log('📡 LLM Completion Response Stream:');
