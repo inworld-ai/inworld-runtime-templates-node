@@ -6,7 +6,7 @@ Thank you for your interest in contributing to the Inworld Runtime Templates! Th
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js (v20 or higher)
 - npm (v9 or higher) or Yarn
 - Git
 - An Inworld AI account and API key
@@ -18,8 +18,8 @@ Thank you for your interest in contributing to the Inworld Runtime Templates! Th
 2. **Clone your fork**:
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/inworld-runtime-nodejs-templates.git
-   cd inworld-runtime-nodejs-templates
+   git clone https://github.com/YOUR_USERNAME/inworld-runtime-templates-node.git
+   cd inworld-runtime-templates-node
    ```
 
 3. **Install dependencies**:

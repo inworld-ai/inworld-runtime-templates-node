@@ -14,25 +14,25 @@ import * as fs from 'fs';
 import path from 'path';
 
 // Import our custom SafetyAggregatorNode
-import { SafetyAggregatorCustomNode } from './safety_aggregator_node';
+import { SafetyAggregatorCustomNode } from './safety_aggregator_custom_node';
 
 const minimist = require('minimist');
 
 const DEFAULT_TEXT_CLASSIFIER_WEIGHTS_MODEL_PATH = path.resolve(
   __dirname,
-  'fixtures/text_classifier_model_weights.json',
+  '../shared/fixtures/text_classifier_model_weights.json',
 );
 const DEFAULT_KEYWORD_MATCHER_PROFANITY_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/profanity.json',
+  '../shared/fixtures/profanity.json',
 );
 const DEFAULT_KEYWORD_MATCHER_ADULT_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/adult.json',
+  '../shared/fixtures/adult.json',
 );
 const DEFAULT_KEYWORD_MATCHER_SUBSTANCE_USE_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/substance_use.json',
+  '../shared/fixtures/substance_use.json',
 );
 
 const usage = `
@@ -128,7 +128,7 @@ async function run() {
 
   const keywordMatcherNode = new KeywordMatcherNode({
     id: 'keyword_matcher_node',
-    keywords: keywordGroups as any,
+    keywords: keywordGroups,
     reportToClient: false,
   });
 
@@ -178,22 +178,10 @@ async function run() {
             `Safety Decision: ${safetyResult.isSafe ? 'SAFE' : 'UNSAFE'}`,
           );
           console.log(`Input Text: "${safetyResult.text}"`);
-          if (safetyResult.classes && safetyResult.classes.length > 0) {
-            console.log(
-              `Classification violations: ${safetyResult.classes.join(', ')}`,
-            );
-          }
-          if (
-            safetyResult.keywordMatches &&
-            safetyResult.keywordMatches.length > 0
-          ) {
-            console.log(
-              `Keyword matches: ${safetyResult.keywordMatches.map((m: any) => m.keyword).join(', ')}`,
-            );
-          }
           console.log(`Result Type: SafetyResult`);
         },
         default: (data: any) => {
+          console.log(data);
           console.log('\n=== Unhandled Safety Result ===');
           console.log(`Safety Decision: ${data.isSafe ? 'SAFE' : 'UNSAFE'}`);
           console.log(`Input Text: "${data.text}"`);

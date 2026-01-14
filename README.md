@@ -4,9 +4,9 @@ Templates for building AI applications with the Inworld Runtime SDK. From simple
 
 ## Prerequisites
 
+- Node.js (v20 or higher)
 - npm or Yarn
-- Node.js v20 or higher: [Download here](https://nodejs.org/en/download)
-- Inworld API key (required): [Sign up here](https://platform.inworld.ai/signup) or see [quickstart guide](/docs/node/authentication#getting-an-api-key)
+- An Inworld AI account and API key
 
 ## Get Started
 
@@ -14,7 +14,7 @@ Templates for building AI applications with the Inworld Runtime SDK. From simple
 
 ```bash
 git clone https://github.com/inworld-ai/inworld-runtime-templates-node.git
-cd inworld-runtime-nodejs-templates
+cd inworld-runtime-templates-node
 ```
 
 ### Step 2: Install Dependencies
@@ -41,17 +41,6 @@ Alternatively, export the key as an environment variable:
 export INWORLD_API_KEY="your_api_key_here"
 ```
 
-#### Optional Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `INWORLD_ADDON_POOL_SIZE` | `64` | Thread pool size for native addon. Increase for high-concurrency workloads. |
-
-```bash
-# For running multiple concurrent graphs or load testing
-export INWORLD_ADDON_POOL_SIZE=128
-```
-
 ### Step 4: Run the Templates
 
 Run any template using the scripts defined in `package.json`:
@@ -70,7 +59,7 @@ npm run node-intent "What house are you in?"
 ## Repo Structure
 
 ```
-inworld-runtime-nodejs-templates/
+inworld-runtime-templates-node/
 ├── src/                    # All template source files
 │   ├── llm/                # LLM operations, routing, and tools
 │   │   ├── routing/        # Intelligent routing and conditional logic
@@ -159,9 +148,13 @@ npm install
 yarn install
 ```
 
+**Port Conflicts (Voice Agent)**
+
+The voice agent client will automatically pick the next available port if 3000 is taken.
+
 **Audio Issues**
 
-Grant microphone permissions in your browser for voice examples.
+Grant microphone permissions in your browser for voice agent examples.
 
 **Bug Reports**: [GitHub Issues](https://github.com/inworld-ai/inworld-runtime-templates-node/issues)
 

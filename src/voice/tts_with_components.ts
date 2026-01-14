@@ -6,7 +6,6 @@ import {
   GraphBuilder,
   GraphTypes,
   ProcessContext,
-  ProxyNode,
   RemoteLLMChatNode,
   RemoteTTSNode,
   TextChunkingNode,
@@ -29,6 +28,7 @@ import {
 
 const OUTPUT_DIRECTORY = path.join(
   __dirname,
+  '..',
   '..',
   'data-output',
   'tts_samples',
@@ -57,19 +57,6 @@ class NodePromptBuilder extends CustomNode {
           content: input.text,
         },
       ],
-      responseFormat: ResponseFormatName.Text,
-    });
-  }
-}
-
-class TTSRequestBuilderNode extends CustomNode {
-  process(
-    _context: ProcessContext,
-    input: GraphInput,
-    textStream: GraphTypes.TextStream,
-  ): GraphTypes.TTSRequest {
-    return GraphTypes.TTSRequest.withStream(textStream, {
-      speakerId: input.voiceName,
     });
   }
 }
@@ -125,8 +112,6 @@ run();
 async function run() {
   const { text, modelId, defaultVoice, voiceName, apiKey } = parseArgs();
 
-  // Create nodes
-  const nodeStart = new ProxyNode();
   const nodePromptBuilder = new NodePromptBuilder();
   const llmNode = new RemoteLLMChatNode({
     provider: DEFAULT_LLM_PROVIDER,
@@ -135,34 +120,27 @@ async function run() {
     responseFormat: ResponseFormatName.Text,
   });
   const textChunkingNode = new TextChunkingNode();
-  const ttsRequestBuilderNode = new TTSRequestBuilderNode();
   const ttsNode = new RemoteTTSNode({
     speakerId: defaultVoice,
     modelId,
   });
   const customStreamReader = new NodeCustomStreamReader();
 
-  // Build graph with method chaining
   const graph = new GraphBuilder({
     id: 'custom_tts_graph',
     apiKey,
     enableRemoteConfig: false,
   })
-    .addNode(nodeStart)
     .addNode(nodePromptBuilder)
     .addNode(llmNode)
     .addNode(textChunkingNode)
-    .addNode(ttsRequestBuilderNode)
     .addNode(ttsNode)
     .addNode(customStreamReader)
-    .addEdge(nodeStart, nodePromptBuilder)
     .addEdge(nodePromptBuilder, llmNode)
     .addEdge(llmNode, textChunkingNode)
-    .addEdge(nodeStart, ttsRequestBuilderNode)
-    .addEdge(textChunkingNode, ttsRequestBuilderNode)
-    .addEdge(ttsRequestBuilderNode, ttsNode)
+    .addEdge(textChunkingNode, ttsNode)
     .addEdge(ttsNode, customStreamReader)
-    .setStartNode(nodeStart)
+    .setStartNode(nodePromptBuilder)
     .setEndNode(customStreamReader)
     .build();
 
