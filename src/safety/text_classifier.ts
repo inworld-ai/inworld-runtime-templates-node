@@ -12,7 +12,7 @@ const minimist = require('minimist');
 
 const DEFAULT_TEXT_CLASSIFIER_WEIGHTS_MODEL_PATH = path.resolve(
   __dirname,
-  'fixtures/text_classifier_model_weights.json',
+  '../shared/fixtures/text_classifier_model_weights.json',
 );
 
 const usage = `
@@ -22,10 +22,10 @@ Usage:
 
 Examples:
     # Basic text classification
-    yarn node-text-classifier "This is safe content" --modelPath="safety/fixtures/text_classifier_model_weights.json"
+    yarn node-text-classifier "This is safe content" --modelPath="graph/fixtures/text_classifier_model_weights.json"
 
     # Check harmful content
-    yarn node-text-classifier "I want to hurt myself" --modelPath="safety/fixtures/text_classifier_model_weights.json"
+    yarn node-text-classifier "I want to hurt myself" --modelPath="graph/fixtures/text_classifier_model_weights.json"
     `;
 
 run();

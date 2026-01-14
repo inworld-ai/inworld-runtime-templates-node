@@ -10,15 +10,6 @@ import {
 
 const minimist = require('minimist');
 
-// Helper to create tagged audio objects
-const audio = (data: Float32Array, sampleRate: number) => ({
-  type: 'Audio',
-  data: { data: Array.from(data), sampleRate },
-});
-
-// Helper to create tagged text objects
-const text = (txt: string) => ({ _iw_type: 'Text', data: { text: txt } });
-
 /**
  * Producer node that generates a stream of audio chunks
  */
@@ -63,7 +54,10 @@ class AudioProducerNode extends CustomNode {
       console.log(
         `  Yielding chunk ${i + 1}/${this.chunkCount}: ${samplesPerChunk} samples @ ${frequency}Hz`,
       );
-      yield audio(data, this.sampleRate);
+      yield new GraphTypes.Audio({
+        data: Array.from(data),
+        sampleRate: this.sampleRate,
+      });
     }
   }
 }
@@ -80,10 +74,7 @@ class AudioJoinNode extends CustomNode {
   async *process(
     _context: ProcessContext,
     audioStream: GraphTypes.AudioChunkStream,
-  ): AsyncGenerator<{
-    type: string;
-    data: { data: number[]; sampleRate: number };
-  }> {
+  ): AsyncGenerator<GraphTypes.Audio> {
     console.log('\n=== Joining audio chunks (2 by 2) ===');
 
     let buffer: { data: Float32Array; sampleRate: number } | null = null;
@@ -112,7 +103,10 @@ class AudioJoinNode extends CustomNode {
           `  → Joined chunks: ${buffer.data.length} + ${chunk.data.length} = ${joinedData.length} samples`,
         );
 
-        yield audio(joinedData, buffer.sampleRate);
+        yield new GraphTypes.Audio({
+          data: Array.from(joinedData),
+          sampleRate: buffer.sampleRate,
+        });
         buffer = null;
       }
     }
@@ -120,7 +114,10 @@ class AudioJoinNode extends CustomNode {
     // If there's a remaining chunk, output it
     if (buffer) {
       console.log(`  → Output remaining chunk: ${buffer.data.length} samples`);
-      yield audio(buffer.data, buffer.sampleRate);
+      yield new GraphTypes.Audio({
+        data: Array.from(buffer.data),
+        sampleRate: buffer.sampleRate,
+      });
     }
   }
 }
@@ -132,7 +129,7 @@ class StatisticsNode extends CustomNode {
   async process(
     _context: ProcessContext,
     audioStream: GraphTypes.AudioChunkStream,
-  ): Promise<{ _iw_type: string; data: { text: string } }> {
+  ): Promise<string> {
     console.log('\n=== Collecting statistics ===');
 
     let chunkCount = 0;
@@ -151,7 +148,7 @@ class StatisticsNode extends CustomNode {
     const stats = `Statistics: ${chunkCount} chunks, ${totalSamples} total samples, ${durationSeconds.toFixed(2)}s duration @ ${sampleRate}Hz`;
 
     console.log(`  ${stats}`);
-    return text(stats);
+    return stats;
   }
 }
 
