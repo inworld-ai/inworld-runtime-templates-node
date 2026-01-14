@@ -11,6 +11,7 @@ import {
   shutdownTelemetry,
   startSpan,
   startSpanWithParent,
+  TelemetryExporterType,
   TelemetryLogLevel,
 } from '@inworld/runtime/telemetry';
 
@@ -21,7 +22,7 @@ Usage:
     yarn telemetry-capabilities [options]
 
 Options:
-    --mode=<demo|basic|advanced|error|metrics|logging>[optional, default=demo] \n
+    --mode=<demo|basic|advanced|error|metrics|logging|capture>[optional, default=demo] \n
     --apiKey=<api-key>[optional, uses INWORLD_API_KEY env var] \n
     --appName=<app-name>[optional, default=telemetry-demo] \n
     --appVersion=<app-version>[optional, default=1.0.0] \n
@@ -29,6 +30,8 @@ Options:
     --samplingRate=<0.0-1.0>[optional, default=1.0] \n
     --logLevel=<Trace|Debug|Info|Warn|Error>[optional, default=Info] \n
     --endpoint=<telemetry-endpoint>[optional, uses default endpoint] \n
+    --enableSpanCapture[optional, default=false] \n
+    --spanQueueSize=<number>[optional, default=50] \n
 
 Examples:
     # Run all demos
@@ -73,15 +76,16 @@ async function run() {
       apiKey: args.apiKey || process.env.INWORLD_API_KEY,
       appName: args.appName,
       appVersion: args.appVersion,
-      /*      endpoint: args.endpoint,
-      exporterType: args.exporterType as any,
+      endpoint: args.endpoint,
+      exporterType: args.exporterType as TelemetryExporterType,
       logger: {
-        level: args.logLevel as any,
-        sinkAbslLogs: true,
+        level: args.logLevel as TelemetryLogLevel,
       },
       tracer: {
         samplingRate: args.samplingRate,
-      },*/
+        enableSpanCapture: args.enableSpanCapture,
+        maxSpanCaptureQueueSize: args.spanQueueSize,
+      },
     });
     console.log('✅ Telemetry initialized successfully');
   } catch (error) {
@@ -106,9 +110,12 @@ async function run() {
       case 'logging':
         await runLoggingDemo();
         break;
+      case 'capture':
+        await runCaptureDemo(args.enableSpanCapture);
+        break;
       case 'demo':
       default:
-        await runFullDemo();
+        await runFullDemo(args.enableSpanCapture);
         break;
     }
   } catch (error) {
@@ -444,7 +451,47 @@ async function runLoggingDemo() {
   }
 }
 
-async function runFullDemo() {
+async function runCaptureDemo(enableSpanCapture: boolean) {
+  console.log('\n📦 Running Span Capture Demo');
+
+  const parentSpan = startSpan('span_capture_demo');
+  parentSpan.setAttribute('demo.type', 'span_capture');
+
+  const childSpan = startSpanWithParent(
+    'span_capture_child',
+    { phase: 'child', category: 'demo' },
+    [],
+    parentSpan,
+  );
+
+  await simulateWork(250);
+  childSpan.setOK();
+  childSpan.end();
+
+  parentSpan.setOK();
+  parentSpan.end();
+
+  if (!enableSpanCapture) {
+    console.log(
+      '  Span capture disabled. Re-run with --enableSpanCapture to collect traces.',
+    );
+    return;
+  }
+
+  try {
+    const traces = parentSpan.dequeueSpanTraces(10);
+    console.log(
+      `  Dequeued ${traces.spans?.length ?? 0} span(s) from capture queue.`,
+    );
+  } catch (error) {
+    console.warn(
+      '  Unable to dequeue captured spans. Ensure tracer.enableSpanCapture is set.',
+      error,
+    );
+  }
+}
+
+async function runFullDemo(enableSpanCapture: boolean) {
   console.log('\n🎯 Running Full Demo (All Features)');
 
   console.log('\n1️⃣  Basic Span Demo');
@@ -462,6 +509,11 @@ async function runFullDemo() {
   console.log('\n5️⃣  Logging Demo');
   await runLoggingDemo();
 
+  if (enableSpanCapture) {
+    console.log('\n6️⃣  Span Capture Demo');
+    await runCaptureDemo(true);
+  }
+
   console.log(
     '\n🎉 Full demo completed! Check your telemetry system for all the spans and metrics.',
   );
@@ -472,10 +524,12 @@ function parseArgs(): {
   apiKey: string;
   appName: string;
   appVersion: string;
-  exporterType: string;
+  exporterType: TelemetryExporterType;
   samplingRate: number;
   logLevel: string;
   endpoint?: string;
+  enableSpanCapture: boolean;
+  spanQueueSize: number;
 } {
   const argv = minimist(process.argv.slice(2));
 
@@ -488,10 +542,15 @@ function parseArgs(): {
   const apiKey = argv.apiKey || process.env.INWORLD_API_KEY || '';
   const appName = argv.appName || 'telemetry-demo';
   const appVersion = argv.appVersion || '1.0.0';
-  const exporterType = argv.exporterType || 'Remote';
+  const exporterType =
+    (argv.exporterType as TelemetryExporterType) ||
+    TelemetryExporterType.Remote;
   const samplingRate = parseFloat(argv.samplingRate) || 1.0;
   const logLevel = argv.logLevel || 'Info';
   const endpoint = argv.endpoint;
+  const enableSpanCapture =
+    argv.enableSpanCapture != null ? Boolean(argv.enableSpanCapture) : false;
+  const spanQueueSize = argv.spanQueueSize ? Number(argv.spanQueueSize) : 50;
 
   if (!apiKey) {
     throw new Error(
@@ -512,6 +571,8 @@ function parseArgs(): {
     samplingRate,
     logLevel,
     endpoint,
+    enableSpanCapture,
+    spanQueueSize,
   };
 }
 
