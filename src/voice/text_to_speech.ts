@@ -42,7 +42,7 @@ async function run() {
     id: 'tts_node',
     speakerId: voiceName,
     modelId,
-    sampleRate: 48000,
+    sampleRate: 24000,
     temperature: 0.8,
     speakingRate: 1,
   });

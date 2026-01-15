@@ -16,6 +16,7 @@ class CustomStreamReaderNode extends CustomNode {
     _context: ProcessContext,
     contentStream: GraphTypes.ContentStream,
   ): Promise<string> {
+    console.log('CustomStreamReaderNode', contentStream);
     let result = '';
     for await (const chunk of contentStream) {
       if (chunk.text) result += chunk.text;
@@ -75,6 +76,9 @@ async function run() {
     },
     default: (data) => {
       console.log('Unprocessed data:', data);
+    },
+    error: (error) => {
+      console.log('error data:', error);
     },
   });
   stopInworldRuntime();
