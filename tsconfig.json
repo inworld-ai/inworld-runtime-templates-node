@@ -9,9 +9,4 @@
     "types": ["node"],
     "esModuleInterop": true
   },
-  "exclude": [
-    "node_modules",
-    "voice_agent",
-    "src/llm/tools/mcp-server-mocks/**/*.ts"
-  ]
 }

@@ -14,7 +14,7 @@ const minimist = require('minimist');
 
 const usage = `
 Usage:
-    yarn node-stt \n
+    npm run node-stt -- \n
     --audioFilePath=<path-to-audio-file>[required, expected to be wav format]`;
 
 run();

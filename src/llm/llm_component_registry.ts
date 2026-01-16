@@ -18,7 +18,7 @@ import { parseArgs } from '../shared/helpers/cli_helpers';
 
 const usage = `
 Usage:
-    yarn node-llm-chat-component-registry "Hello, how are you?" \n
+    npm run node-llm-chat-component-registry "Hello, how are you?" -- \n
     --modelName=<model-name>[optional, default=${DEFAULT_LLM_MODEL_NAME}] \n
     --provider=<service-provider>[optional, default=${DEFAULT_LLM_PROVIDER}] \n
     --stream=<true/false>[optional, default=true]`;

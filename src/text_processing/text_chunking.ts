@@ -14,9 +14,9 @@ const minimist = require('minimist');
 
 const usage = `
 Usage:
-    yarn node-text-chunking-and-aggregator "This is a long text that needs to be chunked. Use textChunking node." \n
+    npm run node-text-chunking-and-aggregator "This is a long text that needs to be chunked. Use textChunking node." \n
     OR \n
-    yarn node-text-chunking-and-aggregator --file=path/to/your/text/file.txt`;
+    npm run node-text-chunking-and-aggregator -- --file=path/to/your/text/file.txt`;
 
 run();
 

@@ -16,7 +16,7 @@ import { parseArgs } from '../shared/helpers/cli_helpers';
 
 const usage = `
 Usage:
-    yarn node-llm-chat-explicit-component "Hello, how are you?" \n
+    npm run node-llm-chat-explicit-component "Hello, how are you?" -- \n
     --modelName=<model-name>[optional, default=${DEFAULT_LLM_MODEL_NAME}] \n
     --provider=<service-provider>[optional, default=${DEFAULT_LLM_PROVIDER}] \n
     --stream=<true/false>[optional, default=true]`;
@@ -55,6 +55,7 @@ async function run() {
         {
           role: 'user',
           content: prompt,
+          toolCallId: '', // Required by schema, empty for user messages
         },
       ],
     }),

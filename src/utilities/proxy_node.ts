@@ -11,7 +11,7 @@ const minimist = require('minimist');
 
 const usage = `
 Usage:
-    yarn node-proxy <input-data> --inputType=<type>
+    npm run node-proxy <input-data> -- --inputType=<type>
 
 Input Types:
     --inputType=llm_chat_request    Input as LLM chat request (JSON array)
@@ -19,13 +19,13 @@ Input Types:
     --inputType=custom        Input as custom JSON object
 
 Examples:
-    yarn node-proxy "Hello, how are you?" --inputType=text
-    yarn node-proxy '[{"role": "user", "content": "Hello!"}]' --inputType=llm_chat_request
-    yarn node-proxy '{"key": "value", "number": 42}' --inputType=custom
+    npm run node-proxy "Hello, how are you?" -- --inputType=text
+    npm run node-proxy '[{"role": "user", "content": "Hello!"}]' -- --inputType=llm_chat_request
+    npm run node-proxy '{"key": "value", "number": 42}' -- --inputType=custom
 
     # If you are on Windows, you need to escape the quotes in the JSON string.
-    # For example (double check in proxy_node.ts to see the escape characters):
-    yarn node-proxy '{\"key\": \"value\", \"number\": 42}' --inputType=custom
+    # For example (double check in node_proxy.ts to see the escape characters):
+    npm run node-proxy '{\"key\": \"value\", \"number\": 42}' -- --inputType=custom
 `;
 
 run();
@@ -36,7 +36,7 @@ async function run() {
   const proxyNode = new ProxyNode();
 
   const graph = new SequentialGraphBuilder({
-    id: 'proxy_node_graph',
+    id: 'node_proxy_graph',
     apiKey: process.env.INWORLD_API_KEY || '',
     nodes: [proxyNode],
     enableRemoteConfig: false,

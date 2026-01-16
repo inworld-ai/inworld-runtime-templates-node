@@ -7,23 +7,29 @@ import * as path from 'path';
 import { v7 } from 'uuid';
 
 const promptTemplate = fs.readFileSync(
-  path.resolve(__dirname, 'fixtures/intent_matching_prompt_template.txt'),
+  path.resolve(
+    __dirname,
+    '../shared/fixtures/intent_matching_prompt_template.txt',
+  ),
   'utf-8',
 );
 
 const DEFAULT_INTENTS = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, 'fixtures/intents.json'), 'utf-8'),
+  fs.readFileSync(
+    path.resolve(__dirname, '../shared/fixtures/intents.json'),
+    'utf-8',
+  ),
 );
 
 const minimist = require('minimist');
 
 const usage = `
 Usage:
-    yarn node-intent "Tell me about that hogwarts of yours" (should match via embeddings) \\n
+    npm run node-intent "Tell me about that hogwarts of yours" (should match via embeddings) \\n
     OR \\n
-    yarn node-intent "Tell me about that wizard castle dumbledore rules over?" (should match via LLM fallback) \\n
+    npm run node-intent "Tell me about that wizard castle dumbledore rules over?" (should match via LLM fallback) \\n
     OR \n
-    yarn node-intent --file=path/to/intents.json`;
+    npm run node-intent -- --file=path/to/intents.json`;
 
 run();
 

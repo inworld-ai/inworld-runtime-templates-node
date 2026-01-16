@@ -9,36 +9,36 @@ const minimist = require('minimist');
 
 const DEFAULT_KEYWORD_MATCHER_PROFANITY_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/profanity.json',
+  '../shared/fixtures/profanity.json',
 );
 const DEFAULT_KEYWORD_MATCHER_ADULT_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/adult.json',
+  '../shared/fixtures/adult.json',
 );
 const DEFAULT_KEYWORD_MATCHER_SUBSTANCE_USE_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/substance_use.json',
+  '../shared/fixtures/substance_use.json',
 );
 
 const usage = `
 Usage:
-    yarn node-keyword-matcher "Your text to check" \\
+    npm run node-keyword-matcher "Your text to check" -- \\
     --profanityPath=<profanity-path>[optional, path to profanity.json] \\
     --adultPath=<adult-path>[optional, path to adult.json] \\
     --substancePath=<substance-path>[optional, path to substance_use.json]
 
 Examples:
     # Test safe content
-    yarn node-keyword-matcher "I love pizza and learning"
+    npm run node-keyword-matcher "I love pizza and learning"
 
     # Test unsafe content (profanity)
-    yarn node-keyword-matcher "This is fucking stupid"
+    npm run node-keyword-matcher "This is fucking stupid"
 
     # Test with custom keyword files
-    yarn node-keyword-matcher "Let's do drugs" \\
-      --profanityPath="safety/fixtures/profanity.json" \\
-      --adultPath="safety/fixtures/adult.json" \\
-      --substancePath="safety/fixtures/substance_use.json"
+    npm run node-keyword-matcher "Let's do drugs" -- \\
+      --profanityPath="src/shared/fixtures/profanity.json" \\
+      --adultPath="src/shared/fixtures/adult.json" \\
+      --substancePath="src/shared/fixtures/substance_use.json"
 `;
 
 run();

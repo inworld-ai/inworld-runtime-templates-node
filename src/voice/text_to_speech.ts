@@ -29,7 +29,7 @@ const OUTPUT_PATH = path.join(OUTPUT_DIRECTORY, 'node_tts_output.wav');
 
 const usage = `
 Usage:
-    yarn node-tts "Hello, how can I help you?" \n
+    npm run node-tts "Hello, how can I help you?" -- \n
     --modelId=<model-id>[optional, ${DEFAULT_TTS_MODEL_ID} will be used by default] \n
     --voiceName=<voice-id>[optional, ${DEFAULT_VOICE_ID} will be used by default]`;
 
@@ -42,7 +42,7 @@ async function run() {
     id: 'tts_node',
     speakerId: voiceName,
     modelId,
-    sampleRate: 48000,
+    sampleRate: 24000,
     temperature: 0.8,
     speakingRate: 1,
   });

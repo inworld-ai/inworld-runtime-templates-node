@@ -13,7 +13,7 @@ const cannedPhrases = [
 
 const usage = `
 Usage:
-    yarn node-random-canned
+    npm run node-random-canned
     
 Description:
     This is a sample graph that demonstrates the RandomCannedTextNode node.

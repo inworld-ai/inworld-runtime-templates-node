@@ -44,7 +44,7 @@ class IntentMatchUnwrapNode extends CustomNode {
     _input: GraphTypes.MatchedIntents,
   ): GraphTypes.Custom<IntentMatchUnwrapOutput> {
     return {
-      intent_name: _input.intents[0].intent_name,
+      intent_name: _input.intents[0].intentName,
       intent_score: _input.intents[0].score,
     };
   }
@@ -52,7 +52,7 @@ class IntentMatchUnwrapNode extends CustomNode {
 
 const usage = `
 Usage:
-    yarn conditional-edges-after-intent "Hello" \n
+    npm run conditional-edges-after-intent "Hello" -- \n
     --embedder-modelName=<model-name>[optional, used for embedding, default=${DEFAULT_EMBEDDER_MODEL_NAME}] \n
     --embedder-provider=<service-provider>[optional, used for embedding, default=${DEFAULT_EMBEDDER_PROVIDER}] \n
     --llm-modelName=<model-name>[optional, used for embedding, default=${DEFAULT_EMBEDDER_MODEL_NAME}] \n
@@ -113,10 +113,10 @@ async function run() {
     .addEdge(builtInIntentSubgraphNode, proxyNode)
     .addEdge(proxyNode, intentMatchUnwrapNode)
     .addEdge(intentMatchUnwrapNode, greetingNode, {
-      conditionExpression: 'input.value.intent_name == "greeting"',
+      conditionExpression: 'input.intent_name == "greeting"',
     })
     .addEdge(intentMatchUnwrapNode, farewellNode, {
-      conditionExpression: 'input.value.intent_name == "farewell"',
+      conditionExpression: 'input.intent_name == "farewell"',
     })
     .setStartNode(builtInIntentSubgraphNode)
     .setEndNodes([greetingNode, farewellNode])
@@ -130,7 +130,7 @@ async function run() {
         console.log('Matched intents:');
         data.intents.forEach((match, index) => {
           console.log(
-            `  ${index + 1}. ${match.intent_name} (score: ${match.score.toFixed(4)})`,
+            `  ${index + 1}. ${match.intentName} (score: ${match.score.toFixed(4)})`,
           );
         });
       },
