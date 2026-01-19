@@ -10,9 +10,6 @@ import {
 
 const minimist = require('minimist');
 
-// Helper to create tagged text objects
-const text = (txt: string) => ({ _iw_type: 'Text', data: { text: txt } });
-
 /**
  * Producer node that generates a stream of text chunks
  */
@@ -29,12 +26,11 @@ class TextProducerNode extends CustomNode {
     this.messages = messages;
   }
 
-  *process(_context: ProcessContext, _input: string) {
+  async *process(_context: ProcessContext, _input: string) {
     console.log('\n=== Producing text chunks ===');
     for (const message of this.messages) {
       console.log(`  Yielding: "${message}"`);
-      //yield message;
-      yield text(message);
+      yield message;
     }
   }
 }
@@ -56,7 +52,7 @@ class ReverseNode extends CustomNode {
       const txt = chunk.text;
       const reversed = txt.split('').reverse().join('');
       console.log(`  "${txt}" → "${reversed}"`);
-      yield text(reversed);
+      yield reversed;
     }
   }
 }
@@ -68,7 +64,7 @@ class JoinNode extends CustomNode {
   async process(
     _context: ProcessContext,
     textStream: GraphTypes.TextStream,
-  ): Promise<{ _iw_type: string; data: { text: string } }> {
+  ): Promise<string> {
     console.log('\n=== Joining stream chunks ===');
     const results: string[] = [];
 
@@ -81,7 +77,7 @@ class JoinNode extends CustomNode {
 
     const joined = results.join(' | ');
     console.log(`  Final joined text: "${joined}"`);
-    return text(joined);
+    return joined;
   }
 }
 
@@ -89,14 +85,14 @@ const usage = `
 Simple Reverse Stream Example
 
 Usage:
-    yarn simple-reverse-stream "hello" "world" "inworld"
-    yarn simple-reverse-stream --no-join "hello" "world" "inworld"
+    npm run simple-reverse-stream "hello" "world" "inworld"
+    npm run simple-reverse-stream -- --no-join "hello" "world" "inworld"
     
 Example:
-    yarn simple-reverse-stream "foo" "bar" "baz"
+    npm run simple-reverse-stream "foo" "bar" "baz"
     Output: "oof | rab | zab"
 
-    yarn simple-reverse-stream --no-join "foo" "bar" "baz"
+    npm run simple-reverse-stream -- --no-join "foo" "bar" "baz"
     Output (stream): "oof", "rab", "zab"
 
 Options:
@@ -157,6 +153,7 @@ async function run() {
     for await (const result of outputStream) {
       result.processResponse({
         default: (data: any) => {
+          console.log('data', data);
           if (data?.data?.text) {
             console.log(`Result: ${data.data.text}`);
           } else {

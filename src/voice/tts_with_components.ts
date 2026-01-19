@@ -6,18 +6,16 @@ import {
   GraphBuilder,
   GraphTypes,
   ProcessContext,
-  ProxyNode,
   RemoteLLMChatNode,
   RemoteTTSNode,
   TextChunkingNode,
 } from '@inworld/runtime/graph';
+import { ResponseFormat } from '@inworld/runtime/primitives/llm';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const minimist = require('minimist');
 const wavEncoder = require('wav-encoder');
-
-import { ResponseFormatName } from '@inworld/runtime/common';
 
 import {
   DEFAULT_LLM_MODEL_NAME,
@@ -29,6 +27,7 @@ import {
 
 const OUTPUT_DIRECTORY = path.join(
   __dirname,
+  '..',
   '..',
   'data-output',
   'tts_samples',
@@ -55,21 +54,10 @@ class NodePromptBuilder extends CustomNode {
         {
           role: 'user',
           content: input.text,
+          toolCallId: '',
         },
       ],
-      responseFormat: ResponseFormatName.Text,
-    });
-  }
-}
-
-class TTSRequestBuilderNode extends CustomNode {
-  process(
-    _context: ProcessContext,
-    input: GraphInput,
-    textStream: GraphTypes.TextStream,
-  ): GraphTypes.TTSRequest {
-    return GraphTypes.TTSRequest.withStream(textStream, {
-      speakerId: input.voiceName,
+      responseFormat: ResponseFormat.Text,
     });
   }
 }
@@ -89,6 +77,7 @@ class NodeCustomStreamReader extends CustomNode {
         audioBuffers.push(buffer);
       }
     }
+
     const mergedBuffer = Buffer.concat(audioBuffers);
     const floatSamples = new Float32Array(
       mergedBuffer.buffer,
@@ -108,6 +97,7 @@ class NodeCustomStreamReader extends CustomNode {
     }
 
     fs.writeFileSync(OUTPUT_PATH, Buffer.from(buffer));
+    console.log('output', { llmResult, audioPath: OUTPUT_PATH });
 
     return { llmResult, audioPath: OUTPUT_PATH };
   }
@@ -115,7 +105,7 @@ class NodeCustomStreamReader extends CustomNode {
 
 const usage = `
 Usage:
-    yarn node-custom-tts "Hello, how are you?" \n
+    npm run node-custom-tts "Hello, how are you?" -- \n
     --voiceName=<voice-id>[REQUIRED, dynamic override voice for custom node, e.g. "Erik"] \n
     --modelId=<model-id>[optional, ${DEFAULT_TTS_MODEL_ID} will be used by default] \n
     --defaultVoice=<voice-id>[optional, ${DEFAULT_VOICE_ID} will be used as default voice for TTS primitive]`;
@@ -125,44 +115,35 @@ run();
 async function run() {
   const { text, modelId, defaultVoice, voiceName, apiKey } = parseArgs();
 
-  // Create nodes
-  const nodeStart = new ProxyNode();
   const nodePromptBuilder = new NodePromptBuilder();
   const llmNode = new RemoteLLMChatNode({
     provider: DEFAULT_LLM_PROVIDER,
     modelName: DEFAULT_LLM_MODEL_NAME,
     stream: true,
-    responseFormat: ResponseFormatName.Text,
+    responseFormat: ResponseFormat.Text,
   });
   const textChunkingNode = new TextChunkingNode();
-  const ttsRequestBuilderNode = new TTSRequestBuilderNode();
   const ttsNode = new RemoteTTSNode({
     speakerId: defaultVoice,
     modelId,
   });
   const customStreamReader = new NodeCustomStreamReader();
 
-  // Build graph with method chaining
   const graph = new GraphBuilder({
     id: 'custom_tts_graph',
     apiKey,
     enableRemoteConfig: false,
   })
-    .addNode(nodeStart)
     .addNode(nodePromptBuilder)
     .addNode(llmNode)
     .addNode(textChunkingNode)
-    .addNode(ttsRequestBuilderNode)
     .addNode(ttsNode)
     .addNode(customStreamReader)
-    .addEdge(nodeStart, nodePromptBuilder)
     .addEdge(nodePromptBuilder, llmNode)
     .addEdge(llmNode, textChunkingNode)
-    .addEdge(nodeStart, ttsRequestBuilderNode)
-    .addEdge(textChunkingNode, ttsRequestBuilderNode)
-    .addEdge(ttsRequestBuilderNode, ttsNode)
+    .addEdge(textChunkingNode, ttsNode)
     .addEdge(ttsNode, customStreamReader)
-    .setStartNode(nodeStart)
+    .setStartNode(nodePromptBuilder)
     .setEndNode(customStreamReader)
     .build();
 
@@ -173,10 +154,10 @@ async function run() {
     const result = await outputStream.next();
 
     await result.processResponse({
-      ContentStream: async (contentStream) => {
+      ContentStream: async (contentStream: GraphTypes.ContentStream) => {
         let llmResult = '';
         for await (const chunk of contentStream) {
-          if (chunk.text) llmResult += chunk.text;
+          if (chunk.content) llmResult += chunk.content;
         }
         console.log('LLM report to client result:', llmResult);
       },

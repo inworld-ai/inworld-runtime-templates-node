@@ -1,4 +1,5 @@
-import { TextGenerationConfigInterface } from '@inworld/runtime/primitives/llm';
+import type { Camelize, TextGenerationConfig } from '@inworld/runtime/graph';
+import * as path from 'path';
 
 export enum Modes {
   LOCAL = 'local',
@@ -18,7 +19,11 @@ export const DEFAULT_EMBEDDER_MODEL_NAME = 'BAAI/bge-large-en-v1.5';
 export const DEFAULT_EMBEDDER_PROVIDER = 'inworld';
 export const DEFAULT_LLM_PROVIDER = 'openai';
 export const SAMPLE_RATE = 48000;
-export const DEFAULT_VAD_MODEL_PATH = 'shared/models/silero_vad.onnx';
+export const DEFAULT_VAD_MODEL_PATH = path.join(
+  __dirname,
+  'models',
+  'silero_vad.onnx',
+);
 export const TEXT_CONFIG = {
   max_new_tokens: 2500,
   max_prompt_length: 100,
@@ -32,7 +37,7 @@ export const TEXT_CONFIG = {
 
 export function convertTextConfigToInterface(
   config: typeof TEXT_CONFIG,
-): TextGenerationConfigInterface {
+): Camelize<TextGenerationConfig> {
   return {
     maxNewTokens: config.max_new_tokens,
     maxPromptLength: config.max_prompt_length,
@@ -119,33 +124,48 @@ export const KNOWLEDGE_COMPILE_CONFIG_SDK = {
   },
 } as any;
 
+type ToolJsonSchema = {
+  type: 'object';
+  properties: Record<
+    string,
+    {
+      type: string;
+      description: string;
+    }
+  >;
+  required: string[];
+};
+
+const serializeTool = (
+  name: string,
+  description: string,
+  schema: ToolJsonSchema,
+) => ({
+  name,
+  description,
+  // LlmChatRequestToolSchema expects properties as a JSON string, not an object.
+  properties: JSON.stringify(schema),
+});
+
 export const TOOLS = [
-  {
-    name: 'calculator',
-    description: 'Evaluate a mathematical expression',
+  serializeTool('calculator', 'Evaluate a mathematical expression', {
+    type: 'object',
     properties: {
-      type: 'object',
-      properties: {
-        expression: {
-          type: 'string',
-          description: 'The mathematical expression to evaluate',
-        },
+      expression: {
+        type: 'string',
+        description: 'The mathematical expression to evaluate',
       },
-      required: ['expression'],
     },
-  },
-  {
-    name: 'get_weather',
-    description: 'Get the current weather in a location',
+    required: ['expression'],
+  }),
+  serializeTool('get_weather', 'Get the current weather in a location', {
+    type: 'object',
     properties: {
-      type: 'object',
-      properties: {
-        location: {
-          type: 'string',
-          description: 'The city and state, e.g., San Francisco, CA',
-        },
+      location: {
+        type: 'string',
+        description: 'The city and state, e.g., San Francisco, CA',
       },
-      required: ['location'],
     },
-  },
+    required: ['location'],
+  }),
 ] as any;

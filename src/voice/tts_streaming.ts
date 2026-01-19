@@ -21,6 +21,7 @@ import {
 const OUTPUT_DIRECTORY = path.join(
   __dirname,
   '..',
+  '..',
   'data-output',
   'tts_samples',
 );
@@ -69,7 +70,7 @@ class CustomStreamReaderNode extends CustomNode {
 
 const usage = `
 Usage:
-    yarn node-custom-tts-stream "Hello, how are you?" \n
+    npm run node-custom-tts-stream "Hello, how are you?" -- \n
     --modelId=<model-id>[optional, ${DEFAULT_TTS_MODEL_ID} will be used by default] \n
     --voiceName=<voice-id>[optional, ${DEFAULT_VOICE_ID} will be used by default]`;
 

@@ -4,8 +4,14 @@ import { stopInworldRuntime } from '@inworld/runtime';
 import {
   GraphBuilder,
   GraphTypes,
+  LLMChatRequest,
   RemoteLLMChatNode,
 } from '@inworld/runtime/graph';
+import {
+  ImageDetail,
+  Message,
+  ResponseFormat,
+} from '@inworld/runtime/primitives/llm';
 
 import {
   DEFAULT_LLM_MODEL_NAME,
@@ -17,7 +23,7 @@ const minimist = require('minimist');
 
 const usage = `
 Usage:
-    yarn node-llm-chat "Tell me the weather in Vancouver and evaluate the expression 2 + 2" \n
+    npm run node-llm-chat "Tell me the weather in Vancouver and evaluate the expression 2 + 2" -- \n
     --modelName=<model-name>[optional, default=${DEFAULT_LLM_MODEL_NAME}] \n
     --provider=<service-provider>[optional, default=${DEFAULT_LLM_PROVIDER}] \n
     --stream=<true|false>[optional, default=true, enable/disable streaming] \n
@@ -30,26 +36,26 @@ Usage:
 
 Examples:
     # Basic request
-    yarn node-llm-chat "Tell me the weather in Vancouver"
+    npm run node-llm-chat "Tell me the weather in Vancouver"
 
     # Basic request with tools
-    yarn node-llm-chat "What is 15 + 27?" --modelName="gpt-4o-mini" --provider="openai" --tools --toolChoice="auto"
+    npm run node-llm-chat "What is 15 + 27?" -- --modelName="gpt-4o-mini" --provider="openai" --tools --toolChoice="auto"
     
     # Specific tool choice.
-    yarn node-llm-chat "What is the weather in Vancouver?" --modelName="gpt-4o-mini" --provider="openai" --tools --toolChoice="get_weather"
+    npm run node-llm-chat "What is the weather in Vancouver?" -- --modelName="gpt-4o-mini" --provider="openai" --tools --toolChoice="get_weather"
     
     # Multimodal request with image
-    yarn node-llm-chat "What do you see in this image?" --modelName="gpt-4o" --provider="openai" --imageUrl="https://storage.googleapis.com/assets-inworld-ai/node-packages/Boletus_edulis_IT.jpg"
+    npm run node-llm-chat "What do you see in this image?" -- --modelName="gpt-4o" --provider="openai" --imageUrl="https://upload.wikimedia.org/wikipedia/en/a/a9/Example.jpg"
 
     # Request with response format
-    yarn node-llm-chat "Generate a user profile for a software engineer. Include name, profession, experience_years, skills array, and location. return in json format" --modelName="gpt-4o-mini" --provider="openai" --responseFormat="json"
+    npm run node-llm-chat "Generate a user profile for a software engineer. Include name, profession, experience_years, skills array, and location. return in json format" -- --modelName="gpt-4o-mini" --provider="openai" --responseFormat="json"
 
     # Using message templates with JSON input (transforms JSON into chat messages)
     # Note: Message templates REQUIRE JSON input and are FORBIDDEN with text input
-    yarn node-llm-chat '{"user_name": "Alice", "question": "What is the capital of France?"}' --modelName="gpt-4o-mini" --provider="openai" --useTemplates
+    npm run node-llm-chat '{"user_name": "Alice", "question": "What is the capital of France?"}' -- --modelName="gpt-4o-mini" --provider="openai" --useTemplates
     
     # More complex JSON with templates
-    yarn node-llm-chat '{"user_name": "Bob", "question": "Explain quantum computing"}' --modelName="gpt-4o" --provider="openai" --useTemplates --stream=false
+    npm run node-llm-chat '{"user_name": "Bob", "question": "Explain quantum computing"}' -- --modelName="gpt-4o" --provider="openai" --useTemplates --stream=false
     
     # Templates are ignored when using LLMChatRequest input (full message object)
     # Templates work only with plain JSON input, converting it to messages via template interpolation
@@ -72,22 +78,25 @@ async function run() {
     useTemplates,
   } = parseArgs();
 
+  // Message templates allow using Jinja2 templating in message content.
+  // The text field can contain {{variable_name}} placeholders that will be
+  // replaced with values from the JSON input.
   const messageTemplates = useTemplates
     ? [
         {
           role: 'system' as const,
-          content: {
-            type: 'text' as const,
-            value:
-              "You are a helpful assistant. Answer questions clearly and concisely. The answer should include a call to the user's name.",
-          },
+          content:
+            "You are a helpful assistant. Answer questions clearly and concisely. The answer should include a call to the user's name.",
         },
         {
           role: 'user' as const,
-          content: {
-            type: 'template' as const,
-            template: 'User {{user_name}} asks: {{question}}',
-          },
+          // Jinja templates go in the text field of TextContentItem
+          content: [
+            {
+              type: 'text' as const,
+              text: 'User {{user_name}} asks: {{question}}',
+            },
+          ],
         },
       ]
     : undefined;
@@ -102,7 +111,7 @@ async function run() {
     } catch (_) {
       throw new Error(
         'Message templates require JSON input. Text input is forbidden when using templates.\n' +
-          'Example: yarn node-llm-chat \'{"user_name": "Alice", "question": "What is the capital?"}\' --useTemplates',
+          'Example: npm run node-llm-chat \'{"user_name": "Alice", "question": "What is the capital?"}\' --useTemplates',
       );
     }
   }
@@ -149,6 +158,12 @@ async function run() {
     if (responseFormat) {
       graphInput.responseFormat = responseFormat;
     }
+
+    // Log imageUrl for multimodal requests
+    if (imageUrl) {
+      console.log(`imageUrl ${imageUrl}`);
+    }
+
     graphInput = new GraphTypes.LLMChatRequest(graphInput);
   }
 
@@ -174,9 +189,9 @@ async function run() {
         let chunkCount = 0;
         for await (const chunk of stream) {
           chunkCount++;
-          if (chunk.text) {
-            streamContent += chunk.text;
-            process.stdout.write(chunk.text);
+          if (chunk.content) {
+            streamContent += chunk.content;
+            process.stdout.write(chunk.content);
           }
           if (chunk.toolCalls && chunk.toolCalls.length > 0) {
             for (const toolCall of chunk.toolCalls) {
@@ -214,21 +229,24 @@ function createMessages(
   prompt: string,
   imageUrl?: string,
   toolCallHistory?: boolean,
-) {
-  const systemMessage = {
+): LLMChatRequest {
+  const systemMessage: Message = {
     role: 'system',
     content:
       'You are a helpful assistant that can use tools when needed. When analyzing images, describe what you see and use appropriate tools if calculations or weather information is needed.',
+    toolCallId: '',
   };
 
-  const previousUserMessage = {
+  const previousUserMessage: Message = {
     role: 'user',
     content: 'Hi please call the calculator tool to calculate 2 + 2',
+    toolCallId: '',
   };
 
-  const firstAssistantMessage = {
+  const firstAssistantMessage: Message = {
     role: 'assistant',
     content: '',
+    toolCallId: '',
     toolCalls: [
       {
         id: '1',
@@ -238,28 +256,24 @@ function createMessages(
     ],
   };
 
-  const toolMessage = {
+  const toolMessage: Message = {
     role: 'tool',
     toolCallId: '1',
     content: '5',
   };
 
-  let userMessage;
+  let userMessage: Message;
   if (imageUrl) {
-    console.log('imageUrl', imageUrl);
+    // For multimodal: ONLY set contentItems, NOT content - they are mutually exclusive
     userMessage = {
       role: 'user',
-      content: [
+      toolCallId: '',
+      content: '',
+      contentItems: [
+        prompt,
         {
-          type: 'text' as const,
-          text: prompt,
-        },
-        {
-          type: 'image' as const,
-          image_url: {
-            url: imageUrl,
-            detail: 'high',
-          },
+          url: imageUrl,
+          detail: ImageDetail.High,
         },
       ],
     };
@@ -267,6 +281,7 @@ function createMessages(
     userMessage = {
       role: 'user',
       content: prompt,
+      toolCallId: '',
     };
   }
 
@@ -279,10 +294,12 @@ function createMessages(
         toolMessage,
         userMessage,
       ],
+      responseFormat: ResponseFormat.Text,
     };
   } else {
     return {
       messages: [systemMessage, userMessage],
+      responseFormat: ResponseFormat.Text,
     };
   }
 }
@@ -301,7 +318,7 @@ function createMessagesWithTools(
 
   const result: any = {
     messages,
-    tools: TOOLS,
+    tools: TOOLS.map(normalizeToolDefinition),
   };
 
   if (toolChoice) {
@@ -311,12 +328,14 @@ function createMessagesWithTools(
       toolChoice === 'none'
     ) {
       result.toolChoice = {
-        choice: toolChoice,
+        type: toolChoice,
       };
     } else {
       // Assume it's a specific function name
       result.toolChoice = {
-        choice: {
+        type: 'function',
+        function: {
+          type: 'function',
           name: toolChoice,
         },
       };
@@ -324,6 +343,19 @@ function createMessagesWithTools(
   }
 
   return result;
+}
+
+function normalizeToolDefinition(tool: any) {
+  if (!tool) {
+    return tool;
+  }
+  if (tool.properties !== undefined && typeof tool.properties !== 'string') {
+    return {
+      ...tool,
+      properties: JSON.stringify(tool.properties),
+    };
+  }
+  return tool;
 }
 
 function parseArgs(): {
@@ -353,7 +385,18 @@ function parseArgs(): {
   const stream = argv.stream !== undefined ? argv.stream === 'true' : true;
   const toolChoice = argv.toolChoice || undefined;
   const imageUrl = argv.imageUrl || undefined;
-  const responseFormat = argv.responseFormat || 'text';
+  // Normalize responseFormat to proper case (json -> JSON, text -> Text)
+  let responseFormat = argv.responseFormat || ResponseFormat.Text;
+  if (typeof responseFormat === 'string') {
+    const formatLower = responseFormat.toLowerCase();
+    if (formatLower === 'json') {
+      responseFormat = ResponseFormat.JSON;
+    } else if (formatLower === 'text') {
+      responseFormat = ResponseFormat.Text;
+    } else if (formatLower === 'jsonschema') {
+      responseFormat = ResponseFormat.JSONSchema;
+    }
+  }
   const toolCallHistory =
     argv.toolCallHistory !== undefined
       ? argv.toolCallHistory === 'true'

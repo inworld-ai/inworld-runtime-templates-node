@@ -5,13 +5,9 @@
     "moduleResolution": "node16",
     "noImplicitAny": true,
     "resolveJsonModule": true,
+    "skipLibCheck": true,
     "target": "es6",
     "types": ["node"],
     "esModuleInterop": true
-  },
-  "exclude": [
-    "node_modules",
-    "voice_agent",
-    "src/llm/tools/mcp-server-mocks/**/*.ts"
-  ]
+  }
 }

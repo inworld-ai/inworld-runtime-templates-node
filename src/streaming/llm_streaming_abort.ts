@@ -19,7 +19,7 @@ class CustomStreamReaderNode extends CustomNode {
     console.log('CustomStreamReaderNode::isCancelled', _context.isCancelled);
     let result = '';
     for await (const chunk of contentStream) {
-      if (chunk.text) result += chunk.text;
+      if (chunk.content) result += chunk.content;
     }
     return result;
   }
@@ -27,7 +27,7 @@ class CustomStreamReaderNode extends CustomNode {
 
 const usage = `
 Usage:
-    yarn node-custom-llm-stream-with-abort-controller "Hello, world"
+    npm run node-custom-llm-stream-with-abort-controller "Hello, world"
 Description:
     This example demonstrates how to create a custom node that streams a LLM response with abort controller.
     The node is asynchronous and will return the LLM response.

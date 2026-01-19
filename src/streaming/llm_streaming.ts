@@ -16,9 +16,10 @@ class CustomStreamReaderNode extends CustomNode {
     _context: ProcessContext,
     contentStream: GraphTypes.ContentStream,
   ): Promise<string> {
+    console.log('CustomStreamReaderNode', contentStream);
     let result = '';
     for await (const chunk of contentStream) {
-      if (chunk.text) result += chunk.text;
+      if (chunk.content) result += chunk.content;
     }
     return result;
   }
@@ -26,7 +27,7 @@ class CustomStreamReaderNode extends CustomNode {
 
 const usage = `
 Usage:
-    yarn node-custom-llm-stream "Hello, world"
+    npm run node-custom-llm-stream "Hello, world"
 Description:
     This example demonstrates how to create a custom node that streams a LLM response.
     The node is asynchronous and will return the LLM response.
@@ -75,6 +76,9 @@ async function run() {
     },
     default: (data) => {
       console.log('Unprocessed data:', data);
+    },
+    error: (error) => {
+      console.log('error data:', error);
     },
   });
   stopInworldRuntime();
