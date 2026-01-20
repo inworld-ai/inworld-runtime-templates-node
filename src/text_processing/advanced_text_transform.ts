@@ -56,7 +56,7 @@ class AdvancedTextNode extends CustomNode<
 
 const usage = `
 Usage:
-    yarn node-custom-advanced "Hello, world!" \n
+    npm run node-custom-advanced "Hello, world!" -- \n
     --mode=<mode>[optional, default=uppercase] - Processing mode: uppercase, lowercase, reverse, titlecase \n
     --prefix=<prefix>[optional] - Text to add before the processed text \n
     --suffix=<suffix>[optional] - Text to add after the processed text \n

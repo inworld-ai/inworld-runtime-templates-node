@@ -37,7 +37,7 @@ class NoRecordsNode extends CustomNode {
 
 const usage = ` 
 Usage:
-    yarn conditional-edges-after-knowledge "How often are the Olympics held?"
+    npm run conditional-edges-after-knowledge "How often are the Olympics held?"
 
 Description:
     This example demonstrates how to create a graph with conditional edges.

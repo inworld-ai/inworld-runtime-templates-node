@@ -11,7 +11,7 @@ import {
 const minimist = require('minimist');
 const usage = `
 Usage:
-    yarn node-knowledge "How often are the Olympics held?"
+    npm run node-knowledge "How often are the Olympics held?"
 
 Note: INWORLD_API_KEY environment variable must be set`;
 

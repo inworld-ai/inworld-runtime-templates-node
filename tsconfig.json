@@ -1,17 +1,15 @@
 {
   "compilerOptions": {
+    "baseUrl": "src",
     "declaration": true,
     "module": "Node16",
     "moduleResolution": "node16",
     "noImplicitAny": true,
     "resolveJsonModule": true,
+    "skipLibCheck": true,
     "target": "es6",
-    "types": ["node"],
-    "esModuleInterop": true
-  },
-  "exclude": [
-    "node_modules",
-    "voice_agent",
-    "src/llm/tools/mcp-server-mocks/**/*.ts"
-  ]
+    "types": ["node", "jest"],
+    "esModuleInterop": true,
+    "isolatedModules": true
+  }
 }

@@ -17,7 +17,7 @@ class ReverseTextNode extends CustomNode {
 
 const usage = `
 Usage:
-    yarn node-custom-reverse "Hello, world"
+    npm run node-custom-reverse "Hello, world"
 Description:
     This example demonstrates how to create a custom node that reverses a string.
     The node is synchronous and will return the reversed string immediately.
