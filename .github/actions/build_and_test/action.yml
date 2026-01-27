@@ -1,0 +1,41 @@
+name: build-and-test
+description: Build and test
+
+inputs:
+  inworld-api-key:
+    description: "Inworld API key"
+    required: true
+  workload-identity-provider:
+    description: "Workload identity provider"
+    required: true
+  service-account:
+    description: "Service account"
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: "Fetch Secrets"
+      uses: inworld-ai/inworld-gh-actions/gcp-secrets@main
+      with:
+        workload_identity_provider: "${{ inputs.workload-identity-provider }}"
+        service_account: "${{ inputs.service-account }}"
+        secrets: |-
+          BRAVE_API_KEY:inworld-ai-github/brave-api-key
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install dependencies
+      shell: bash
+      run: npm install
+
+    - name: Run Templates
+      shell: bash
+      run: npm run test
+      env:
+        INWORLD_API_KEY: ${{ inputs.inworld-api-key }}
+        BRAVE_API_KEY: ${{ env.BRAVE_API_KEY }}
+        DISABLE_TELEMETRY: true

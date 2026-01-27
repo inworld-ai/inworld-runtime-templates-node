@@ -1,0 +1,29 @@
+name: PR Tests Linux
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+  workflow_dispatch:
+
+jobs:
+  pr-test-linux:
+    name: Build and test Linux
+    runs-on: [self-hosted, linux, x64, kubernetes]
+    environment: "LINUX"
+    concurrency:
+      group: ${{github.workflow}}-linux-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Build and test
+        uses: ./.github/actions/build_and_test
+        with:
+          inworld-api-key: ${{ secrets.TEST_INWORLD_API_KEY }}
+          workload-identity-provider: ${{ vars.AUTH_IDENTITY_PROVIDER }}
+          service-account: ${{ vars.AUTH_SERVICE_ACCOUNT }}

@@ -1,0 +1,29 @@
+name: PR Tests MacOS
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+  workflow_dispatch:
+
+jobs:
+  pr-test-macos:
+    name: Build and test MacOS
+    runs-on: [self-hosted, macOS, ARM64, xcode-15]
+    environment: "MACOS"
+    concurrency:
+      group: ${{github.workflow}}-macos-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Build and test
+        uses: ./.github/actions/build_and_test
+        with:
+          inworld-api-key: ${{ secrets.TEST_INWORLD_API_KEY }}
+          workload-identity-provider: ${{ vars.AUTH_IDENTITY_PROVIDER }}
+          service-account: ${{ vars.AUTH_SERVICE_ACCOUNT }}
