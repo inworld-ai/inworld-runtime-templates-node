@@ -17,9 +17,11 @@ import {
   DEFAULT_VOICE_ID,
   SAMPLE_RATE,
 } from '../shared/constants';
+import { exitWithError } from '../shared/helpers/cli_helpers';
 
 const OUTPUT_DIRECTORY = path.join(
   __dirname,
+  '..',
   '..',
   'data-output',
   'tts_samples',
@@ -69,7 +71,7 @@ class CustomStreamReaderNode extends CustomNode {
 
 const usage = `
 Usage:
-    yarn node-custom-tts-stream "Hello, how are you?" \n
+    npm run node-custom-tts-stream "Hello, how are you?" -- \n
     --modelId=<model-id>[optional, ${DEFAULT_TTS_MODEL_ID} will be used by default] \n
     --voiceName=<voice-id>[optional, ${DEFAULT_VOICE_ID} will be used by default]`;
 
@@ -143,8 +145,7 @@ function parseArgs(): {
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
 
   const text = argv._?.join(' ') || '';
@@ -153,12 +154,13 @@ function parseArgs(): {
   const apiKey = process.env.INWORLD_API_KEY || '';
 
   if (!text) {
-    throw new Error(`You need to provide text.\n${usage}`);
+    exitWithError(`You need to provide text.\n${usage}`, 1);
   }
 
   if (!apiKey) {
-    throw new Error(
+    exitWithError(
       `You need to set INWORLD_API_KEY environment variable.\n${usage}`,
+      1,
     );
   }
 
