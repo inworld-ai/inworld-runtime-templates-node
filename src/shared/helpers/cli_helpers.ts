@@ -22,6 +22,15 @@ export function findNpxPath(): string {
   }
 }
 
+export function exitWithError(message: string, code = 0) {
+  if (code === 0) {
+    console.log(message);
+  } else {
+    console.error(message);
+  }
+  process.exit(code);
+}
+
 export function parseArgs(
   usage: string,
   opts?: {
@@ -38,24 +47,24 @@ export function parseArgs(
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
 
   const prompt = argv._?.join(' ') || '';
   const modelName = argv.modelName || DEFAULT_LLM_MODEL_NAME;
   const provider = argv.provider || DEFAULT_LLM_PROVIDER;
   const apiKey = process.env.INWORLD_API_KEY || process.env.API_KEY || '';
-  const stream = argv.stream !== 'false';
+  const stream = argv?.stream !== 'false';
   const port = argv.port || 8080;
 
   if (!prompt && !opts?.skipPrompt) {
-    throw new Error(`You need to provide a prompt.\n${usage}`);
+    exitWithError(`You need to provide a prompt.\n${usage}`, 1);
   }
 
   if (!apiKey) {
-    throw new Error(
+    exitWithError(
       `You need to set INWORLD_API_KEY environment variable.\n${usage}`,
+      1,
     );
   }
 

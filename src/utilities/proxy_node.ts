@@ -7,11 +7,13 @@ import {
   SequentialGraphBuilder,
 } from '@inworld/runtime/graph';
 
+import { exitWithError } from '../shared/helpers/cli_helpers';
+
 const minimist = require('minimist');
 
 const usage = `
 Usage:
-    yarn node-proxy <input-data> --inputType=<type>
+    npm run node-proxy <input-data> -- --inputType=<type>
 
 Input Types:
     --inputType=llm_chat_request    Input as LLM chat request (JSON array)
@@ -19,13 +21,13 @@ Input Types:
     --inputType=custom        Input as custom JSON object
 
 Examples:
-    yarn node-proxy "Hello, how are you?" --inputType=text
-    yarn node-proxy '[{"role": "user", "content": "Hello!"}]' --inputType=llm_chat_request
-    yarn node-proxy '{"key": "value", "number": 42}' --inputType=custom
+    npm run node-proxy "Hello, how are you?" -- --inputType=text
+    npm run node-proxy '[{"role": "user", "content": "Hello!"}]' -- --inputType=llm_chat_request
+    npm run node-proxy '{"key": "value", "number": 42}' -- --inputType=custom
 
     # If you are on Windows, you need to escape the quotes in the JSON string.
-    # For example (double check in proxy_node.ts to see the escape characters):
-    yarn node-proxy '{\"key\": \"value\", \"number\": 42}' --inputType=custom
+    # For example (double check in node_proxy.ts to see the escape characters):
+    npm run node-proxy '{\"key\": \"value\", \"number\": 42}' -- --inputType=custom
 `;
 
 run();
@@ -36,7 +38,7 @@ async function run() {
   const proxyNode = new ProxyNode();
 
   const graph = new SequentialGraphBuilder({
-    id: 'proxy_node_graph',
+    id: 'node_proxy_graph',
     apiKey: process.env.INWORLD_API_KEY || '',
     nodes: [proxyNode],
     enableRemoteConfig: false,
@@ -75,7 +77,7 @@ async function processInput(
           messages,
         });
       } catch (error) {
-        throw new Error(`Invalid LLM chat request JSON: ${error.message}`);
+        exitWithError(`Invalid LLM chat request JSON: ${error.message}`, 1);
       }
 
     case 'text':
@@ -85,11 +87,11 @@ async function processInput(
       try {
         return JSON.parse(inputData);
       } catch (error) {
-        throw new Error(`Invalid custom JSON input: ${error.message}`);
+        exitWithError(`Invalid custom JSON input: ${error.message}`, 1);
       }
 
     default:
-      throw new Error(`Unsupported input type: ${inputType}`);
+      exitWithError(`Unsupported input type: ${inputType}`, 1);
   }
 }
 
@@ -151,8 +153,9 @@ function verifyProxyBehavior(inputType: string, outputType: string) {
 
   const expected = expectedMappings[inputType];
   if (expected && !expected.includes(outputType)) {
-    throw new Error(
+    exitWithError(
       `⚠️  Warning: Expected output type ${expected.join(' or ')} for input type '${inputType}', but got '${outputType}'`,
+      1,
     );
   } else {
     console.log(
@@ -168,25 +171,25 @@ function parseArgs(): {
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
 
   const inputData = argv._?.join(' ') || '';
   const inputType = argv.inputType || '';
 
   if (!inputData) {
-    throw new Error(`You need to provide input data.\n${usage}`);
+    exitWithError(`You need to provide input data.\n${usage}`, 1);
   }
 
   if (!inputType) {
-    throw new Error(`You need to specify --inputType.\n${usage}`);
+    exitWithError(`You need to specify --inputType.\n${usage}`, 1);
   }
 
   const supportedTypes = ['llm_chat_request', 'text', 'custom'];
   if (!supportedTypes.includes(inputType)) {
-    throw new Error(
+    exitWithError(
       `Unsupported input type '${inputType}'. Supported types: ${supportedTypes.join(', ')}\n${usage}`,
+      1,
     );
   }
 
