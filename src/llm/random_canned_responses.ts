@@ -3,6 +3,8 @@ import 'dotenv/config';
 import { stopInworldRuntime } from '@inworld/runtime';
 import { GraphBuilder, RandomCannedTextNode } from '@inworld/runtime/graph';
 
+import { exitWithError } from '../shared/helpers/cli_helpers';
+
 const minimist = require('minimist');
 
 const cannedPhrases = [
@@ -13,7 +15,7 @@ const cannedPhrases = [
 
 const usage = `
 Usage:
-    yarn node-random-canned
+    npm run node-random-canned
     
 Description:
     This is a sample graph that demonstrates the RandomCannedTextNode node.
@@ -66,7 +68,6 @@ function parseArgs() {
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
 }

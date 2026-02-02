@@ -15,7 +15,7 @@ import { parseArgs } from '../shared/helpers/cli_helpers';
 
 const usage = `
 Usage:
-    yarn node-llm-completion "Hello, how" \n
+    npm run node-llm-completion "Hello, how" -- \n
     --modelName=<model-name>[optional, default=${DEFAULT_LLM_MODEL_NAME}] \n
     --provider=<service-provider>[optional, default=${DEFAULT_LLM_PROVIDER}] \n
     --stream=<true/false>[optional, default=true]`;
@@ -50,6 +50,9 @@ async function run() {
     await result.processResponse({
       string: (text: string) => {
         console.log(`  Template: Result: ${text}`);
+      },
+      Content: (content: GraphTypes.Content) => {
+        console.log(`  Template: Result: ${content.content}`);
       },
       TextStream: async (textStream: GraphTypes.TextStream) => {
         let resultCount = 0;

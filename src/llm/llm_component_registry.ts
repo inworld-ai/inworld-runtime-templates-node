@@ -9,6 +9,7 @@ import {
   RemoteLLMChatNode,
   RemoteLLMComponent,
 } from '@inworld/runtime/graph';
+import { ResponseFormat } from '@inworld/runtime/primitives/llm';
 
 import {
   DEFAULT_LLM_MODEL_NAME,
@@ -18,7 +19,7 @@ import { parseArgs } from '../shared/helpers/cli_helpers';
 
 const usage = `
 Usage:
-    yarn node-llm-chat-component-registry "Hello, how are you?" \n
+    npm run node-llm-chat-component-registry "Hello, how are you?" -- \n
     --modelName=<model-name>[optional, default=${DEFAULT_LLM_MODEL_NAME}] \n
     --provider=<service-provider>[optional, default=${DEFAULT_LLM_PROVIDER}] \n
     --stream=<true/false>[optional, default=true]`;
@@ -33,7 +34,7 @@ class CustomStreamReaderNode extends CustomNode {
   }> {
     let result = '';
     for await (const chunk of contentStream) {
-      if (chunk.text) result += chunk.text;
+      if (chunk.content) result += chunk.content;
     }
     const llm = context.getLLMInterface('llm-component');
     const contentStream1 = await llm.generateContent(
@@ -45,10 +46,11 @@ class CustomStreamReaderNode extends CustomNode {
           },
         ],
       }),
+      ResponseFormat.Text,
     );
     let result2 = '';
     for await (const chunk of contentStream1) {
-      if (chunk.text) result2 += chunk.text;
+      if (chunk.content) result2 += chunk.content;
     }
     return {
       llmResult: result,
@@ -105,7 +107,7 @@ async function run() {
         let resultText = '';
         let resultCount = 0;
         for await (const content of stream) {
-          resultText += content.text;
+          resultText += content.content;
           resultCount++;
         }
         console.log(`Template: Result count: ${resultCount}`);
