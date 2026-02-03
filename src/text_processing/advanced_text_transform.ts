@@ -5,6 +5,8 @@ import {
   ProcessContext,
 } from '@inworld/runtime/graph';
 
+import { exitWithError } from '../shared/helpers/cli_helpers';
+
 const minimist = require('minimist');
 
 interface AdvancedTextNodeConfig {
@@ -56,7 +58,7 @@ class AdvancedTextNode extends CustomNode<
 
 const usage = `
 Usage:
-    yarn node-custom-advanced "Hello, world!" \n
+    npm run node-custom-advanced "Hello, world!" -- \n
     --mode=<mode>[optional, default=uppercase] - Processing mode: uppercase, lowercase, reverse, titlecase \n
     --prefix=<prefix>[optional] - Text to add before the processed text \n
     --suffix=<suffix>[optional] - Text to add after the processed text \n
@@ -112,8 +114,7 @@ function parseArgs(): {
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
   const prompt = argv._?.join(' ') || '';
   const mode = argv.mode;
@@ -122,7 +123,7 @@ function parseArgs(): {
   const apiKey = process.env.INWORLD_API_KEY || '';
 
   if (!prompt) {
-    throw new Error(`You need to provide a prompt.\n${usage}`);
+    exitWithError(`You need to provide a prompt.\n${usage}`, 1);
   }
 
   return { prompt, mode, prefix, suffix, apiKey };
