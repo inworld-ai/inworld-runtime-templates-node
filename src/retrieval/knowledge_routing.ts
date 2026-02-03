@@ -14,6 +14,7 @@ import {
   DEFAULT_KNOWLEDGE_QUERY,
   KNOWLEDGE_RECORDS,
 } from '../shared/constants';
+import { exitWithError } from '../shared/helpers/cli_helpers';
 
 const minimist = require('minimist');
 
@@ -37,7 +38,7 @@ class NoRecordsNode extends CustomNode {
 
 const usage = ` 
 Usage:
-    yarn conditional-edges-after-knowledge "How often are the Olympics held?"
+    npm run conditional-edges-after-knowledge "How often are the Olympics held?"
 
 Description:
     This example demonstrates how to create a graph with conditional edges.
@@ -104,16 +105,16 @@ function parseArgs(): {
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
 
   const query = argv._?.join(' ') || DEFAULT_KNOWLEDGE_QUERY;
   const apiKey = process.env.INWORLD_API_KEY || '';
 
   if (!apiKey) {
-    throw new Error(
+    exitWithError(
       `You need to set INWORLD_API_KEY environment variable.\n${usage}`,
+      1,
     );
   }
 
