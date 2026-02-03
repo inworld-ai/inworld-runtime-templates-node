@@ -12,10 +12,10 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { LTMParallelLLMCustomNode } from './ltm_parallel_llm_node';
-import { LTMPromptBuilderCustomNode } from './ltm_prompt_builder_node';
-import { LTMResponseParserCustomNode } from './ltm_response_parser_node';
-import { LTMTaskBuilderCustomNode } from './ltm_task_builder_node';
+import { LTMParallelLLMCustomNode } from './nodes/ltm_parallel_llm_custom_node';
+import { LTMPromptBuilderCustomNode } from './nodes/ltm_prompt_builder_custom_node';
+import { LTMResponseParserCustomNode } from './nodes/ltm_response_parser_custom_node';
+import { LTMTaskBuilderCustomNode } from './nodes/ltm_task_builder_custom_node';
 
 interface MemoryRecord {
   text: string;
@@ -36,17 +36,17 @@ const minimist = require('minimist');
 
 const DEFAULT_PROMPT_TEMPLATE_PATH = path.resolve(
   __dirname,
-  'fixtures/ltm_prompt_template.txt',
+  '../shared/fixtures/ltm_prompt_template.txt',
 );
 
 const DEFAULT_INPUT_FILE_PATH = path.resolve(
   __dirname,
-  'fixtures/test_memories.json',
+  '../shared/fixtures/test_memories.json',
 );
 
 const usage = `
 Usage:
-    yarn long-term-memory [options]
+    npm run long-term-memory -- [options]
 
 Options:
     --input=<path>              Path to JSON file with flash memories (default: fixtures/test_memories.json)
@@ -55,13 +55,13 @@ Options:
 
 Examples:
     # Process flash memories using default test data
-    yarn long-term-memory
+    npm run long-term-memory
 
     # Process custom flash memories into long-term memories
-    yarn long-term-memory --input="memory/test_memories.json" --maxFlashMemory=5
+    npm run long-term-memory -- --input="memory/test_memories.json" --maxFlashMemory=5
 
     # Use custom prompt template
-    yarn long-term-memory --input="memory/test_memories.json" \\
+    npm run long-term-memory -- --input="memory/test_memories.json" \\
       --promptTemplate="memory/custom_prompt.txt"
 `;
 
