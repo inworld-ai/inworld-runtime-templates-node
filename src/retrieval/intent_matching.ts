@@ -6,24 +6,32 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { v7 } from 'uuid';
 
+import { exitWithError } from '../shared/helpers/cli_helpers';
+
 const promptTemplate = fs.readFileSync(
-  path.resolve(__dirname, 'fixtures/intent_matching_prompt_template.txt'),
+  path.resolve(
+    __dirname,
+    '../shared/fixtures/intent_matching_prompt_template.txt',
+  ),
   'utf-8',
 );
 
 const DEFAULT_INTENTS = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, 'fixtures/intents.json'), 'utf-8'),
+  fs.readFileSync(
+    path.resolve(__dirname, '../shared/fixtures/intents.json'),
+    'utf-8',
+  ),
 );
 
 const minimist = require('minimist');
 
 const usage = `
 Usage:
-    yarn node-intent "Tell me about that hogwarts of yours" (should match via embeddings) \\n
+    npm run node-intent "Tell me about that hogwarts of yours" (should match via embeddings) \\n
     OR \\n
-    yarn node-intent "Tell me about that wizard castle dumbledore rules over?" (should match via LLM fallback) \\n
+    npm run node-intent "Tell me about that wizard castle dumbledore rules over?" (should match via LLM fallback) \\n
     OR \n
-    yarn node-intent --file=path/to/intents.json`;
+    npm run node-intent -- --file=path/to/intents.json`;
 
 run();
 
@@ -67,7 +75,7 @@ async function run() {
   for await (const response of outputStream) {
     await response.processResponse({
       MatchedIntents: (matchedIntents) => {
-        console.log('Intent matches:', matchedIntents.intents);
+        console.log('Intent matches:', matchedIntents.intentMatches);
       },
     });
   }
@@ -84,8 +92,7 @@ function parseArgs(): {
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
 
   let text = '';
@@ -102,13 +109,16 @@ function parseArgs(): {
       intents = JSON.parse(fileContent);
       console.log(`Reading input from file: ${filePath}`);
     } catch (error) {
-      throw new Error(`Error reading file: ${error.message}\n${usage}`);
+      exitWithError(`Error reading file: ${error.message}\n${usage}`, 1);
     }
   }
   text = argv._?.join(' ');
 
   if (!text) {
-    throw new Error(`You need to provide the text to match intents.\n${usage}`);
+    exitWithError(
+      `You need to provide the text to match intents.\n${usage}`,
+      1,
+    );
   }
 
   return { text, intents };

@@ -10,13 +10,15 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { exitWithError } from '../shared/helpers/cli_helpers';
+
 const minimist = require('minimist');
 
 const usage = `
 Usage:
-    yarn node-text-chunking-and-aggregator "This is a long text that needs to be chunked. Use textChunking node." \n
+    npm run node-text-chunking-and-aggregator "This is a long text that needs to be chunked. Use textChunking node." \n
     OR \n
-    yarn node-text-chunking-and-aggregator --file=path/to/your/text/file.txt`;
+    npm run node-text-chunking-and-aggregator -- --file=path/to/your/text/file.txt`;
 
 run();
 
@@ -93,8 +95,7 @@ function parseArgs(): {
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
 
   let text = '';
@@ -108,7 +109,7 @@ function parseArgs(): {
       text = fs.readFileSync(filePath, 'utf-8');
       console.log(`Reading input from file: ${filePath}`);
     } catch (error) {
-      throw new Error(`Error reading file: ${error.message}\n${usage}`);
+      exitWithError(`Error reading file: ${error.message}\n${usage}`, 1);
     }
   } else {
     // If no text is provided, use a sample text to demonstrate chunking
@@ -118,8 +119,9 @@ function parseArgs(): {
   }
 
   if (!text) {
-    throw new Error(
+    exitWithError(
       `You need to provide text to chunk or a file path.\n${usage}`,
+      1,
     );
   }
 
