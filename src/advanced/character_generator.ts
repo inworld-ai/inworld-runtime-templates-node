@@ -31,9 +31,11 @@ import {
   SAMPLE_RATE,
   TEXT_CONFIG_SDK,
 } from '../shared/constants';
+import { exitWithError } from '../shared/helpers/cli_helpers';
 
 const OUTPUT_DIRECTORY = path.join(
   __dirname,
+  '..',
   '..',
   'data-output',
   'character_generator_dsl_samples',
@@ -460,8 +462,7 @@ class CharacterGeneratorDSLGraph {
 
     const llmComponent = new RemoteLLMComponent({
       id: 'llm-component',
-      provider: this.llmProvider,
-      modelName: this.modelName,
+      modelId: `${this.llmProvider}/${this.modelName}`,
       defaultConfig: TEXT_CONFIG_SDK,
     });
 
@@ -544,15 +545,15 @@ class CharacterGeneratorDSLGraph {
     // Create flow edges
     this.graphBuilder
       .addEdge(inputRouterNode, assetsFetcherNode, {
-        conditionExpression: 'input.value.type == "instruct"',
+        conditionExpression: 'input.type == "instruct"',
       })
       .addEdge(assetsFetcherNode, llmAssetsNode)
       .addEdge(inputRouterNode, questFetcherNode, {
-        conditionExpression: 'input.value.type == "instruct"',
+        conditionExpression: 'input.type == "instruct"',
       })
       .addEdge(questFetcherNode, llmQuestsNode)
       .addEdge(inputRouterNode, stateCollectorNode, {
-        conditionExpression: 'input.value.type == "instruct"',
+        conditionExpression: 'input.type == "instruct"',
       })
       .addEdge(llmAssetsNode, stateCollectorNode)
       .addEdge(llmQuestsNode, stateCollectorNode)
@@ -562,10 +563,10 @@ class CharacterGeneratorDSLGraph {
     // Select flow edges
     this.graphBuilder
       .addEdge(inputRouterNode, characterSelectorNode, {
-        conditionExpression: 'input.value.type == "select"',
+        conditionExpression: 'input.type == "select"',
       })
       .addEdge(characterSelectorNode, ttsTextExtractorNode, {
-        conditionExpression: 'input.value.name != ""',
+        conditionExpression: 'input.name != ""',
       })
       .addEdge(ttsTextExtractorNode, ttsNode, {
         optional: true,
@@ -574,7 +575,7 @@ class CharacterGeneratorDSLGraph {
     // Chat flow edges
     this.graphBuilder
       .addEdge(inputRouterNode, responseGeneratorNode, {
-        conditionExpression: 'input.value.type == "chat"',
+        conditionExpression: 'input.type == "chat"',
       })
       .addEdge(responseGeneratorNode, llmNode)
       .addEdge(llmNode, textAggregatorNode)
@@ -584,7 +585,7 @@ class CharacterGeneratorDSLGraph {
         optional: true,
       })
       .addEdge(inputRouterNode, historyLoggerNode, {
-        conditionExpression: 'input.value.type == "chat"',
+        conditionExpression: 'input.type == "chat"',
       });
 
     // Set start and end nodes
@@ -669,8 +670,7 @@ class CharacterGeneratorDSLGraph {
       const audioBuffers: Buffer[] = [];
       for await (const chunk of ttsStream) {
         if (chunk.audio?.data) {
-          const buffer = Buffer.from(chunk.audio?.data, 'base64');
-          audioBuffers.push(buffer);
+          audioBuffers.push(chunk.audio.data);
         }
       }
 
@@ -731,15 +731,15 @@ class CharacterGeneratorDSLGraph {
 
 const usage = `
 Usage:
-    yarn character-generator [options]
+    npm run character-generator -- [options]
     
 Options:
     --modelName=<model-name>[optional, default=${DEFAULT_LLM_MODEL_NAME}]
     --voiceName=<voice-id>[optional, default=${DEFAULT_VOICE_ID}]
     
 Examples:
-    yarn character-generator
-    yarn character-generator --voiceName=Ashley
+    npm run character-generator
+    npm run character-generator -- --voiceName=Ashley
     
 Interactive Commands:
     create:futuristic world full of cats and robots
@@ -811,8 +811,9 @@ function parseArgs(): {
   const apiKey = process.env.INWORLD_API_KEY || '';
 
   if (!apiKey) {
-    throw new Error(
+    exitWithError(
       `You need to set INWORLD_API_KEY environment variable.\n${usage}`,
+      1,
     );
   }
 

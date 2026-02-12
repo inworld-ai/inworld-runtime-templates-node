@@ -1,6 +1,7 @@
 import 'dotenv/config';
 
 import { stopInworldRuntime } from '@inworld/runtime';
+import { AudioChunkTimestamp } from '@inworld/runtime/primitives/speech';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -18,18 +19,22 @@ import {
   DEFAULT_VOICE_ID,
   SAMPLE_RATE,
 } from '../shared/constants';
-
+import { exitWithError } from '../shared/helpers/cli_helpers';
 const OUTPUT_DIRECTORY = path.join(
   __dirname,
   '..',
   'data-output',
   'tts_samples',
 );
-const OUTPUT_PATH = path.join(OUTPUT_DIRECTORY, 'node_tts_output.wav');
+const OUTPUT_AUDIO_PATH = path.join(OUTPUT_DIRECTORY, 'node_tts_output.wav');
+const OUTPUT_TIMESTAMP_PATH = path.join(
+  OUTPUT_DIRECTORY,
+  'node_tts_timestamps.json',
+);
 
 const usage = `
 Usage:
-    yarn node-tts "Hello, how can I help you?" \n
+    npm run node-tts "Hello, how can I help you?" -- \n
     --modelId=<model-id>[optional, ${DEFAULT_TTS_MODEL_ID} will be used by default] \n
     --voiceName=<voice-id>[optional, ${DEFAULT_VOICE_ID} will be used by default]`;
 
@@ -42,9 +47,10 @@ async function run() {
     id: 'tts_node',
     speakerId: voiceName,
     modelId,
-    sampleRate: 48000,
+    sampleRate: 24000,
     temperature: 0.8,
     speakingRate: 1,
+    timestampType: 'WORD',
   });
 
   const graph = new GraphBuilder({
@@ -61,6 +67,7 @@ async function run() {
   let initialText = '';
   let resultCount = 0;
   const audioBuffers: Buffer[] = [];
+  const timestamps: AudioChunkTimestamp[] = [];
 
   for await (const result of outputStream) {
     await result.processResponse({
@@ -68,9 +75,9 @@ async function run() {
         for await (const chunk of ttsStream) {
           if (chunk.text) initialText += chunk.text;
           if (chunk.audio?.data) {
-            const buffer = Buffer.from(chunk.audio?.data, 'base64');
-            audioBuffers.push(buffer);
+            audioBuffers.push(chunk.audio.data);
           }
+          timestamps.push(...chunk.timestamps);
           resultCount++;
         }
       },
@@ -99,9 +106,11 @@ async function run() {
     fs.mkdirSync(OUTPUT_DIRECTORY, { recursive: true });
   }
 
-  fs.writeFileSync(OUTPUT_PATH, Buffer.from(buffer));
+  fs.writeFileSync(OUTPUT_AUDIO_PATH, Buffer.from(buffer));
+  fs.writeFileSync(OUTPUT_TIMESTAMP_PATH, JSON.stringify(timestamps, null, 2));
 
-  console.log(`Audio saved to ${OUTPUT_PATH}`);
+  console.log(`Audio saved to ${OUTPUT_AUDIO_PATH}`);
+  console.log(`Timestamps saved to ${OUTPUT_TIMESTAMP_PATH}`);
   stopInworldRuntime();
 }
 
@@ -114,8 +123,7 @@ function parseArgs(): {
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
 
   const text = argv._?.join(' ') || '';
@@ -124,12 +132,13 @@ function parseArgs(): {
   const apiKey = process.env.INWORLD_API_KEY || '';
 
   if (!text) {
-    throw new Error(`You need to provide text.\n${usage}`);
+    exitWithError(`You need to provide text.\n${usage}`, 1);
   }
 
   if (!apiKey) {
-    throw new Error(
+    exitWithError(
       `You need to set INWORLD_API_KEY environment variable.\n${usage}`,
+      1,
     );
   }
 
