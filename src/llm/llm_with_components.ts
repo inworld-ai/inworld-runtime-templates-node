@@ -16,7 +16,7 @@ import { parseArgs } from '../shared/helpers/cli_helpers';
 
 const usage = `
 Usage:
-    yarn node-llm-chat-explicit-component "Hello, how are you?" \n
+    npm run node-llm-chat-explicit-component "Hello, how are you?" -- \n
     --modelName=<model-name>[optional, default=${DEFAULT_LLM_MODEL_NAME}] \n
     --provider=<service-provider>[optional, default=${DEFAULT_LLM_PROVIDER}] \n
     --stream=<true/false>[optional, default=true]`;
@@ -27,8 +27,7 @@ async function run() {
   const { prompt, modelName, provider, apiKey, stream } = parseArgs(usage);
 
   const llmComponent = new RemoteLLMComponent({
-    provider,
-    modelName,
+    modelId: `${provider}/${modelName}`,
   });
 
   const llmNode = new RemoteLLMChatNode({
@@ -55,6 +54,7 @@ async function run() {
         {
           role: 'user',
           content: prompt,
+          toolCallId: '', // Required by schema, empty for user messages
         },
       ],
     }),
@@ -66,7 +66,7 @@ async function run() {
         let resultText = '';
         let resultCount = 0;
         for await (const content of stream) {
-          resultText += content.text;
+          resultText += content.content;
           resultCount++;
         }
         console.log(`Template: Result count: ${resultCount}`);
