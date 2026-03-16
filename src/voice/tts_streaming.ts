@@ -17,9 +17,11 @@ import {
   DEFAULT_VOICE_ID,
   SAMPLE_RATE,
 } from '../shared/constants';
+import { exitWithError } from '../shared/helpers/cli_helpers';
 
 const OUTPUT_DIRECTORY = path.join(
   __dirname,
+  '..',
   '..',
   'data-output',
   'tts_samples',
@@ -41,8 +43,7 @@ class CustomStreamReaderNode extends CustomNode {
     for await (const chunk of input) {
       if (chunk.text) initialText += chunk.text;
       if (chunk.audio?.data) {
-        const buffer = Buffer.from(chunk.audio?.data, 'base64');
-        audioBuffers.push(buffer);
+        audioBuffers.push(chunk.audio.data);
       }
     }
     const mergedBuffer = Buffer.concat(audioBuffers);
@@ -69,7 +70,7 @@ class CustomStreamReaderNode extends CustomNode {
 
 const usage = `
 Usage:
-    yarn node-custom-tts-stream "Hello, how are you?" \n
+    npm run node-custom-tts-stream "Hello, how are you?" -- \n
     --modelId=<model-id>[optional, ${DEFAULT_TTS_MODEL_ID} will be used by default] \n
     --voiceName=<voice-id>[optional, ${DEFAULT_VOICE_ID} will be used by default]`;
 
@@ -81,25 +82,26 @@ async function run() {
   const ttsComponent = new RemoteTTSComponent({
     id: 'tts_component_id',
     synthesisConfig: {
-      type: 'inworld',
-      config: {
-        modelId,
-        inference: {
-          temperature: 0.8,
-          speakingRate: 1.0,
-        },
-        postprocessing: {
-          sampleRate: SAMPLE_RATE,
-        },
+      modelId,
+      inference: {
+        temperature: 1.0,
+        speakingRate: 1.0,
+      },
+      postprocessing: {
+        sampleRate: SAMPLE_RATE,
       },
     },
   });
 
   const ttsNode = new RemoteTTSNode({
     ttsComponent,
-    speakerId: voiceName,
-    languageCode: 'en-US',
-    modelId,
+    voice: {
+      id: voiceName,
+      language: 'en-US',
+    },
+    synthesisConfig: {
+      modelId,
+    },
   });
 
   const customNode = new CustomStreamReaderNode();
@@ -143,8 +145,7 @@ function parseArgs(): {
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
 
   const text = argv._?.join(' ') || '';
@@ -153,12 +154,13 @@ function parseArgs(): {
   const apiKey = process.env.INWORLD_API_KEY || '';
 
   if (!text) {
-    throw new Error(`You need to provide text.\n${usage}`);
+    exitWithError(`You need to provide text.\n${usage}`, 1);
   }
 
   if (!apiKey) {
-    throw new Error(
+    exitWithError(
       `You need to set INWORLD_API_KEY environment variable.\n${usage}`,
+      1,
     );
   }
 

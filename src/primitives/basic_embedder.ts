@@ -3,14 +3,14 @@ import 'dotenv/config';
 import { stopInworldRuntime } from '@inworld/runtime';
 import { InworldError } from '@inworld/runtime/common';
 import { DeviceRegistry, DeviceType } from '@inworld/runtime/core';
-import { TextEmbedderFactory } from '@inworld/runtime/primitives/embedder';
+import { TextEmbedder } from '@inworld/runtime/primitives/embeddings';
 
 import { DEFAULT_EMBEDDER_MODEL_NAME, Modes } from '../shared/constants';
 const minimist = require('minimist');
 
 const usage = `
 Usage:
-    yarn basic-embedder \n
+    npm run basic-embedder -- \n
     --mode=remote|local[optional, default=remote] \n
     --modelPath=<path-to-model>[optional, required for local mode] \n
     --modelName=<model-name>[optional, required for remote mode, default=${DEFAULT_EMBEDDER_MODEL_NAME}] \n
@@ -31,41 +31,42 @@ async function run() {
 
   try {
     if (mode === Modes.LOCAL) {
-      const found = DeviceRegistry.getAvailableDevices().find(
-        (d: any) => d.getType() === DeviceType.CPU,
-      );
+      const devices = await DeviceRegistry.getAvailableDevices();
+      const cpuDevice = devices.find((d) => d.type === DeviceType.CPU);
 
-      embedder = await TextEmbedderFactory.createTextEmbedder({
-        type: 'local',
-        config: {
-          modelPath,
-          device: found,
+      if (!cpuDevice) {
+        throw new Error('No CPU device found');
+      }
+
+      embedder = await TextEmbedder.create({
+        modelPath: modelPath,
+        device: {
+          type: cpuDevice.type,
+          index: cpuDevice.index,
         },
       });
     } else {
-      embedder = await TextEmbedderFactory.createTextEmbedder({
-        type: 'remote',
-        config: {
-          modelName,
-          provider,
-          apiKey,
-        },
+      embedder = await TextEmbedder.create({
+        modelName,
+        provider,
+        apiKey,
+        defaultTimeout: '60s',
       });
     }
 
     // Get embeddings for individual texts
     console.log('Getting embeddings for individual texts:');
     for (const text of texts) {
-      const embedding = await embedder.embed(text);
+      const embeddingResponse = await embedder.embed(text);
       console.log(`Text: '${text}'`);
-      console.log(`Embedding shape: ${embedding.length}`);
+      console.log(`Embedding dimension: ${embeddingResponse.embedding.length}`);
     }
 
     // Get embeddings for batch of texts
     console.log('\nGetting embeddings for batch of texts:');
-    const embeddings = await embedder.embedBatch(texts);
-    console.log(`Number of embeddings: ${embeddings.length}`);
-    console.log(`Embedding dimension: ${embeddings[0].length}`);
+    const batch = await embedder.embedBatch(texts);
+    console.log(`Number of embeddings: ${batch.embeddings.length}`);
+    console.log(`Embedding dimension: ${batch.embeddings[0].embedding.length}`);
   } catch (error) {
     if (error instanceof InworldError) {
       console.error('Inworld Error:', {
@@ -76,8 +77,6 @@ async function run() {
       console.error('Error:', error.message);
     }
     process.exit(1);
-  } finally {
-    embedder?.destroy();
   }
   stopInworldRuntime();
 }
@@ -107,6 +106,12 @@ function parseArgs(): {
       throw new Error(
         `You need to set INWORLD_API_KEY environment variable.\n${usage}`,
       );
+    }
+    if (!modelName) {
+      throw new Error(`modelName is required for remote mode.\n${usage}`);
+    }
+    if (!provider) {
+      throw new Error(`provider is required for remote mode.\n${usage}`);
     }
   } else if (!modelPath) {
     throw new Error(
