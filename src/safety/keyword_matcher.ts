@@ -1,7 +1,11 @@
 import 'dotenv/config';
 
 import { stopInworldRuntime } from '@inworld/runtime';
-import { GraphBuilder, KeywordMatcherNode } from '@inworld/runtime/graph';
+import {
+  GraphBuilder,
+  GraphTypes,
+  KeywordMatcherNode,
+} from '@inworld/runtime/graph';
 import * as fs from 'fs';
 import path from 'path';
 
@@ -9,36 +13,36 @@ const minimist = require('minimist');
 
 const DEFAULT_KEYWORD_MATCHER_PROFANITY_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/profanity.json',
+  '../shared/fixtures/profanity.json',
 );
 const DEFAULT_KEYWORD_MATCHER_ADULT_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/adult.json',
+  '../shared/fixtures/adult.json',
 );
 const DEFAULT_KEYWORD_MATCHER_SUBSTANCE_USE_CONFIG_PATH = path.resolve(
   __dirname,
-  'fixtures/substance_use.json',
+  '../shared/fixtures/substance_use.json',
 );
 
 const usage = `
 Usage:
-    yarn node-keyword-matcher "Your text to check" \\
+    npm run node-keyword-matcher "Your text to check" -- \\
     --profanityPath=<profanity-path>[optional, path to profanity.json] \\
     --adultPath=<adult-path>[optional, path to adult.json] \\
     --substancePath=<substance-path>[optional, path to substance_use.json]
 
 Examples:
     # Test safe content
-    yarn node-keyword-matcher "I love pizza and learning"
+    npm run node-keyword-matcher "I love pizza and learning"
 
     # Test unsafe content (profanity)
-    yarn node-keyword-matcher "This is fucking stupid"
+    npm run node-keyword-matcher "This is fucking stupid"
 
     # Test with custom keyword files
-    yarn node-keyword-matcher "Let's do drugs" \\
-      --profanityPath="safety/fixtures/profanity.json" \\
-      --adultPath="safety/fixtures/adult.json" \\
-      --substancePath="safety/fixtures/substance_use.json"
+    npm run node-keyword-matcher "Let's do drugs" -- \\
+      --profanityPath="src/shared/fixtures/profanity.json" \\
+      --adultPath="src/shared/fixtures/adult.json" \\
+      --substancePath="src/shared/fixtures/substance_use.json"
 `;
 
 run();
@@ -87,40 +91,34 @@ async function run() {
     .setEndNode(keywordMatcherNode)
     .build();
 
-  try {
-    const { outputStream } = await graph.start(text);
+  const { outputStream } = await graph.start(text);
 
-    for await (const result of outputStream) {
-      await result.processResponse({
-        MatchedKeywords: (matchedKeywords: any) => {
-          console.log('\n=== Keyword Matcher Result ===');
+  for await (const result of outputStream) {
+    await result.processResponse({
+      MatchedKeywords: ({ keywordMatches }: GraphTypes.MatchedKeywords) => {
+        console.log('\n=== Keyword Matcher Result ===');
 
-          if (matchedKeywords.keywords && matchedKeywords.keywords.length > 0) {
+        if (keywordMatches.length > 0) {
+          console.log(
+            `UNSAFE: Found ${keywordMatches.length} keyword matches:`,
+          );
+          keywordMatches.forEach((keywordMatch: any, index: number) => {
             console.log(
-              `UNSAFE: Found ${matchedKeywords.keywords.length} keyword matches:`,
+              `  ${index + 1}. "${keywordMatch.keyword}" (group: ${keywordMatch.groupName})`,
             );
-            matchedKeywords.keywords.forEach(
-              (keywordMatch: any, index: number) => {
-                console.log(
-                  `  ${index + 1}. "${keywordMatch.keyword}" (group: ${keywordMatch.groupName})`,
-                );
-              },
-            );
-          } else {
-            console.log('SAFE: No keyword matches found');
-          }
+          });
+        } else {
+          console.log('SAFE: No keyword matches found');
+        }
 
-          console.log(`Input Text: "${text}"`);
-          console.log(`Result Type: MatchedKeywords`);
-        },
-        default: (data: any) => {
-          console.log('\n=== Unhandled Result ===');
-          console.log('Debug data:', data);
-        },
-      });
-    }
-  } catch (error: any) {
-    console.error('\nKeyword matcher failed:', error.message);
+        console.log(`Input Text: "${text}"`);
+        console.log(`Result Type: MatchedKeywords`);
+      },
+      default: (data: any) => {
+        console.log('\n=== Unhandled Result ===');
+        console.log('Debug data:', data);
+      },
+    });
   }
   stopInworldRuntime();
 }

@@ -7,11 +7,12 @@ import {
   DEFAULT_KNOWLEDGE_QUERY,
   KNOWLEDGE_RECORDS,
 } from '../shared/constants';
+import { exitWithError } from '../shared/helpers/cli_helpers';
 
 const minimist = require('minimist');
 const usage = `
 Usage:
-    yarn node-knowledge "How often are the Olympics held?"
+    npm run node-knowledge "How often are the Olympics held?"
 
 Note: INWORLD_API_KEY environment variable must be set`;
 
@@ -66,16 +67,16 @@ function parseArgs(): {
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
 
   const query = argv._?.join(' ') || DEFAULT_KNOWLEDGE_QUERY;
   const apiKey = process.env.INWORLD_API_KEY || '';
 
   if (!apiKey) {
-    throw new Error(
+    exitWithError(
       `You need to set INWORLD_API_KEY environment variable.\n${usage}`,
+      1,
     );
   }
 
