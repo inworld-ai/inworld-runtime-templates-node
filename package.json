@@ -1,6 +1,6 @@
 {
   "name": "@inworld/runtime-templates",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "SEE LICENSE IN LICENSE.md and LICENSE-CPP-BINARIES.md",
   "scripts": {
     "copy:license": "cp ../../LICENSE.md . && cp ../../LICENSE-CPP-BINARIES.md ./",
@@ -78,7 +78,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@inworld/runtime": "^1.0.0",
+    "@inworld/runtime": "^1.0.1",
     "dotenv": "^17.2.3",
     "minimist": "^1.2.8",
     "uuid": "^11.1.0",
