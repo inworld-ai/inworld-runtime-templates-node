@@ -1,168 +1,523 @@
 import 'dotenv/config';
 
 import { stopInworldRuntime } from '@inworld/runtime';
-import type { VoiceInterface } from '@inworld/runtime/common';
-import { InworldError } from '@inworld/runtime/common';
+import { bytesToFloat32, InworldError } from '@inworld/runtime/common';
 import {
-  SpeechSynthesisConfig,
-  TTSFactory,
-} from '@inworld/runtime/primitives/tts';
+  AudioChunkTimestamp,
+  TimestampType,
+  TTS,
+} from '@inworld/runtime/primitives/speech';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { DEFAULT_VOICE_ID, SAMPLE_RATE } from '../shared/constants';
+import { DEFAULT_TTS_MODEL_ID, DEFAULT_VOICE_ID } from '../shared/constants';
+import { exitWithError } from '../shared/helpers/cli_helpers';
 
-const minimist = require('minimist');
 const wavEncoder = require('wav-encoder');
+const minimist = require('minimist');
+
+const SAMPLE_RATE = 24000;
 
 const usage = `
 Usage:
-    yarn basic-tts "Hello, how are you?" \n
-    --voiceName=<voice-id>[optional, ${DEFAULT_VOICE_ID} will be used by default]
-    --languageCode=<language-code>[optional, e.g., en-US]`;
-
-const OUTPUT_DIRECTORY = path.join(
-  __dirname,
-  '..',
-  'shared',
-  'data-output',
-  'tts_samples',
-);
-const OUTPUT_PATH = path.join(OUTPUT_DIRECTORY, 'basic_tts_output.wav');
+    npm run basic-tts -- \n
+    --mode=basic|streaming|voices|batch[optional, default=basic] \n
+    --text=<text-to-synthesize>[optional, uses default text] \n
+    --voice=<voice-id>[optional, default=${DEFAULT_VOICE_ID}] \n
+    --outputDir=<output-directory>[optional, default=data-output/tts]
+    
+Available voices: Ashley, Dennis, Alex, Craig, Deborah, Edward, Elizabeth, 
+                  Hades, Julia, Mark, Olivia, Pixie, Priya, Ronald, Sarah, 
+                  Shaun, Theodore, Timothy, Wendy, Dominus
+                  
+Note: INWORLD_API_KEY environment variable must be set`;
 
 run();
 
 async function run() {
-  const { text, voiceName, languageCode, apiKey } = parseArgs();
+  const { mode, text, voice, outputDir, apiKey } = parseArgs();
 
-  // Create speech synthesis configuration
-  const speechSynthesisConfig = SpeechSynthesisConfig.getDefault();
-
-  const tts = await TTSFactory.createRemote({
-    apiKey,
-    synthesisConfig: {
-      type: 'inworld',
-      config: {
-        model_id: 'inworld-tts-1-max',
-        inference: {
-          speaking_rate: 1.0,
-          pitch: 0,
-          temperature: 0.8,
-        },
-        postprocessing: {
-          sample_rate: SAMPLE_RATE,
-        },
-      },
-    },
-  });
-
-  if (languageCode) {
-    // Use advanced synthesis with voice configuration and speech synthesis input
-    const voiceConfig: VoiceInterface = {
-      speakerId: voiceName,
-      languageCode: languageCode,
-    };
-
-    console.log('Using voice configuration:', voiceConfig);
-    console.log('Using speech synthesis text:', text);
-    console.log('Using synthesis config type:', speechSynthesisConfig.type);
-
-    const stream = await tts.synthesizeSpeech(voiceConfig, text);
-    let allAudioData: number[] = [];
-    let chunk = await stream.next();
-
-    while (!chunk.done) {
-      // Concatenate the audio data
-      allAudioData = allAudioData.concat(Array.from(chunk.audio));
-      chunk = await stream.next();
+  try {
+    switch (mode) {
+      case 'basic':
+        await runBasicExample(text, voice, outputDir, apiKey);
+        break;
+      case 'streaming':
+        await runStreamingExample(text, voice, outputDir, apiKey);
+        break;
+      case 'voices':
+        await runVoicesExample(text, outputDir, apiKey);
+        break;
+      case 'batch':
+        await runBatchExample(voice, outputDir, apiKey);
+        break;
+      default:
+        console.error('Unknown mode:', mode);
+        process.exit(1);
     }
-
-    // Create a single audio object with all the data
-    const audio = {
-      sampleRate: SAMPLE_RATE, // default sample rate
-      channelData: [new Float32Array(allAudioData)],
-    };
-
-    // Encode and write all the audio data to a single file
-    const buffer = await wavEncoder.encode(audio);
-    if (!fs.existsSync(OUTPUT_DIRECTORY)) {
-      fs.mkdirSync(OUTPUT_DIRECTORY, { recursive: true });
+  } catch (error) {
+    if (error instanceof InworldError) {
+      console.error('Inworld Error:', {
+        message: error.message,
+        context: error.context,
+      });
+    } else {
+      console.error('Error:', error.message);
     }
-
-    fs.writeFileSync(OUTPUT_PATH, Buffer.from(buffer));
-
-    console.log(`Audio saved to ${OUTPUT_PATH}`);
-    console.log(`Generated ${allAudioData.length} audio samples`);
-  } else {
-    // Use basic synthesis for backward compatibility
-    const stream = await tts.synthesizeSpeech(voiceName, text);
-    let allAudioData: number[] = [];
-    let chunk = await stream.next();
-
-    while (!chunk.done) {
-      // Concatenate the audio data
-      allAudioData = allAudioData.concat(Array.from(chunk.audio));
-      chunk = await stream.next();
-    }
-
-    // Create a single audio object with all the data
-    const audio = {
-      sampleRate: SAMPLE_RATE, // default sample rate
-      channelData: [new Float32Array(allAudioData)],
-    };
-
-    // Encode and write all the audio data to a single file
-    const buffer = await wavEncoder.encode(audio);
-    if (!fs.existsSync(OUTPUT_DIRECTORY)) {
-      fs.mkdirSync(OUTPUT_DIRECTORY, { recursive: true });
-    }
-
-    fs.writeFileSync(OUTPUT_PATH, Buffer.from(buffer));
-
-    console.log(`Audio saved to ${OUTPUT_PATH}`);
+    process.exit(1);
   }
 
-  tts.destroy();
   stopInworldRuntime();
 }
 
+/**
+ * Basic TTS example - Simple text-to-speech synthesis
+ *
+ * @param {string} text - Text to synthesize
+ * @param {string} voice - Voice ID
+ * @param {string} outputDir - Output directory
+ * @param {string} apiKey - API key
+ */
+async function runBasicExample(
+  text: string,
+  voice: string,
+  outputDir: string,
+  apiKey: string,
+) {
+  console.log('\n=== Basic TTS Example ===\n');
+
+  console.log(`Text: "${text}"`);
+  console.log(`Voice: ${voice}\n`);
+
+  console.log('Creating TTS instance...');
+  const tts = await createTTSInstance(apiKey);
+  console.log('TTS instance created!\n');
+
+  console.log('Synthesizing speech...');
+  const startTime = Date.now();
+
+  const audio = await tts.synthesizeSpeechComplete({
+    voice: { id: voice },
+    text,
+    config: makeSynthesisConfig(),
+  });
+
+  const duration = Date.now() - startTime;
+
+  console.log('─'.repeat(60));
+  console.log('Synthesis complete!');
+  console.log(`  • Duration: ${duration}ms`);
+  console.log(`  • Samples: ${audio.data?.length || 0}`);
+  console.log(`  • Sample rate: ${audio.sampleRate}Hz`);
+  console.log(
+    `  • Audio length: ${((audio.data?.length || 0) / audio.sampleRate).toFixed(2)}s`,
+  );
+  console.log(`  • Timestamps: ${audio.timestamps?.length || 0}`);
+  console.log('─'.repeat(60));
+
+  if (audio.timestamps?.length) {
+    logTimestamps(audio.timestamps);
+  }
+
+  if (audio.data) {
+    const audioFloat32 = bytesToFloat32(audio.data);
+    await saveAudioToWav(
+      { data: audioFloat32, sampleRate: audio.sampleRate },
+      path.join(outputDir, 'basic_output.wav'),
+    );
+    await saveTimestamps(
+      audio.timestamps,
+      path.join(outputDir, 'basic_timestamps.json'),
+    );
+  } else {
+    console.log('⚠️  No audio data received');
+  }
+}
+
+/**
+ * Streaming example - Show audio chunks as they arrive
+ *
+ * @param {string} text - Text to synthesize
+ * @param {string} voice - Voice ID
+ * @param {string} outputDir - Output directory
+ * @param {string} apiKey - API key
+ */
+async function runStreamingExample(
+  text: string,
+  voice: string,
+  outputDir: string,
+  apiKey: string,
+) {
+  console.log('\n=== Streaming TTS Example ===\n');
+
+  console.log(`Text: "${text}"`);
+  console.log(`Voice: ${voice}\n`);
+
+  const tts = await createTTSInstance(apiKey);
+
+  console.log('Synthesizing speech (streaming)...');
+  console.log('─'.repeat(60));
+
+  const stream = await tts.synthesizeSpeech({
+    voice: { id: voice },
+    text,
+    config: makeSynthesisConfig(),
+  });
+
+  const chunks: Float32Array[] = [];
+  const timestamps: AudioChunkTimestamp[] = [];
+  let chunkCount = 0;
+  let sampleRate = 0;
+  const startTime = Date.now();
+
+  for await (const audioChunk of stream) {
+    chunkCount++;
+    const chunkFloat32 = bytesToFloat32(audioChunk.data);
+    chunks.push(chunkFloat32);
+    if (sampleRate === 0) {
+      sampleRate = audioChunk.sampleRate;
+    }
+    if (audioChunk.timestamps?.length) {
+      timestamps.push(...audioChunk.timestamps);
+    }
+    console.log(
+      `Chunk ${chunkCount}: ${chunkFloat32.length} samples at ${audioChunk.sampleRate}Hz` +
+        (audioChunk.timestamps?.length
+          ? ` (${audioChunk.timestamps.length} timestamps)`
+          : ''),
+    );
+  }
+
+  const duration = Date.now() - startTime;
+
+  const totalLength = chunks.reduce((sum, arr) => sum + arr.length, 0);
+  const fullAudio = new Float32Array(new ArrayBuffer(totalLength * 4));
+  let offset = 0;
+  for (const chunk of chunks) {
+    fullAudio.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  console.log('─'.repeat(60));
+  console.log('\nStreaming Statistics:');
+  console.log(`  • Chunks received: ${chunkCount}`);
+  console.log(`  • Duration: ${duration}ms`);
+  console.log(`  • Total samples: ${totalLength}`);
+  console.log(`  • Sample rate: ${sampleRate}Hz`);
+  console.log(`  • Audio length: ${(totalLength / sampleRate).toFixed(2)}s`);
+  console.log(`  • Timestamps: ${timestamps.length}`);
+
+  if (timestamps.length) {
+    logTimestamps(timestamps);
+  }
+
+  if (fullAudio.length > 0) {
+    await saveAudioToWav(
+      { data: fullAudio, sampleRate },
+      path.join(outputDir, 'streaming_output.wav'),
+    );
+    await saveTimestamps(
+      timestamps,
+      path.join(outputDir, 'streaming_timestamps.json'),
+    );
+  } else {
+    console.log('⚠️  No audio data received');
+  }
+}
+
+/**
+ * Voices example - Synthesize with different voices
+ *
+ * @param {string} text - Text to synthesize
+ * @param {string} outputDir - Output directory
+ * @param {string} apiKey - API key
+ */
+async function runVoicesExample(
+  text: string,
+  outputDir: string,
+  apiKey: string,
+) {
+  console.log('\n=== Different Voices Example ===\n');
+
+  console.log(`Text: "${text}"\n`);
+
+  const tts = await createTTSInstance(apiKey);
+
+  const voices = [
+    { id: 'Ashley', name: 'Ashley - Warm, natural female voice' },
+    { id: 'Dennis', name: 'Dennis - Smooth, calm male voice' },
+    { id: 'Olivia', name: 'Olivia - Young British female, upbeat' },
+    { id: 'Shaun', name: 'Shaun - Friendly, dynamic male voice' },
+  ];
+
+  console.log('Synthesizing with different voices:\n');
+
+  for (const voice of voices) {
+    console.log(`Voice: ${voice.name} (${voice.id})`);
+    console.log('─'.repeat(60));
+
+    try {
+      const startTime = Date.now();
+
+      const audio = await tts.synthesizeSpeechComplete({
+        voice: { id: voice.id },
+        text,
+        config: makeSynthesisConfig(),
+      });
+
+      const duration = Date.now() - startTime;
+
+      const audioFloat32 = audio.data ? bytesToFloat32(audio.data) : null;
+      console.log(`  ✓ Synthesized in ${duration}ms`);
+      console.log(`  • Samples: ${audioFloat32?.length || 0}`);
+      console.log(`  • Sample rate: ${audio.sampleRate}Hz`);
+      console.log(
+        `  • Duration: ${((audioFloat32?.length || 0) / audio.sampleRate).toFixed(2)}s`,
+      );
+      console.log(`  • Timestamps: ${audio.timestamps?.length || 0}`);
+
+      const filename = `voice_${voice.id.replace(/[^a-zA-Z0-9]/g, '_')}.wav`;
+      if (audioFloat32) {
+        await saveAudioToWav(
+          { data: audioFloat32, sampleRate: audio.sampleRate },
+          path.join(outputDir, filename),
+        );
+        console.log(`  • Saved to: ${filename}`);
+      } else {
+        console.log(`  ⚠️  No audio data received`);
+      }
+    } catch (error) {
+      console.log(`  ✗ Error: ${error.message}`);
+    }
+
+    console.log();
+  }
+}
+
+/**
+ * Batch example - Synthesize multiple texts
+ *
+ * @param {string} voice - Voice ID
+ * @param {string} outputDir - Output directory
+ * @param {string} apiKey - API key
+ */
+async function runBatchExample(
+  voice: string,
+  outputDir: string,
+  apiKey: string,
+) {
+  console.log('\n=== Batch Synthesis Example ===\n');
+
+  console.log(`Voice: ${voice}\n`);
+
+  const tts = await createTTSInstance(apiKey);
+
+  const texts = [
+    'Hello, welcome to our service.',
+    'How can I help you today?',
+    'Thank you for using our text-to-speech system.',
+    'Have a great day!',
+  ];
+
+  console.log(`Synthesizing ${texts.length} texts...\n`);
+
+  const results: Array<{
+    text: string;
+    audioFloat32: Float32Array | null;
+    audio: { sampleRate: number; timestamps?: AudioChunkTimestamp[] };
+    duration: number;
+  }> = [];
+
+  for (let i = 0; i < texts.length; i++) {
+    console.log(`Text ${i + 1}/${texts.length}: "${texts[i]}"`);
+
+    try {
+      const startTime = Date.now();
+
+      const audio = await tts.synthesizeSpeechComplete({
+        voice: { id: voice },
+        text: texts[i],
+        config: makeSynthesisConfig(),
+      });
+
+      const duration = Date.now() - startTime;
+
+      const audioFloat32 = audio.data ? bytesToFloat32(audio.data) : null;
+      results.push({ text: texts[i], audioFloat32, audio, duration });
+
+      console.log(`  ✓ Synthesized in ${duration}ms`);
+      console.log(`  • Samples: ${audioFloat32?.length || 0}`);
+      console.log(
+        `  • Duration: ${((audioFloat32?.length || 0) / audio.sampleRate).toFixed(2)}s`,
+      );
+      console.log(`  • Timestamps: ${audio.timestamps?.length || 0}`);
+
+      const filename = `batch_${i + 1}.wav`;
+      if (audioFloat32) {
+        await saveAudioToWav(
+          { data: audioFloat32, sampleRate: audio.sampleRate },
+          path.join(outputDir, filename),
+        );
+        console.log(`  • Saved to: ${filename}`);
+      } else {
+        console.log(`  ⚠️  No audio data received`);
+      }
+    } catch (error) {
+      console.log(`  ✗ Error: ${error.message}`);
+    }
+
+    console.log();
+  }
+
+  // Concatenate all audio files into one
+  if (results.length > 0 && results[0].audioFloat32) {
+    console.log('Creating combined audio file...');
+
+    const sampleRate = results[0].audio.sampleRate;
+    const silenceDuration = 0.5; // 0.5 seconds of silence between segments
+    const silenceSamples = Math.floor(silenceDuration * sampleRate);
+    const silence = new Float32Array(new ArrayBuffer(silenceSamples * 4));
+
+    // Calculate total length (only for results with data)
+    const totalLength = results.reduce(
+      (sum, result) =>
+        sum + (result.audioFloat32?.length || 0) + silenceSamples,
+      0,
+    );
+
+    const combined = new Float32Array(new ArrayBuffer(totalLength * 4));
+    let offset = 0;
+
+    for (const result of results) {
+      if (result.audioFloat32) {
+        combined.set(result.audioFloat32, offset);
+        offset += result.audioFloat32.length;
+        combined.set(silence, offset);
+        offset += silenceSamples;
+      }
+    }
+
+    if (combined.length > 0) {
+      await saveAudioToWav(
+        { data: combined, sampleRate },
+        path.join(outputDir, 'batch_combined.wav'),
+      );
+
+      console.log('─'.repeat(60));
+      console.log('Batch Statistics:');
+      console.log(`  • Total texts: ${results.length}`);
+      console.log(
+        `  • Total synthesis time: ${results.reduce((sum, r) => sum + r.duration, 0)}ms`,
+      );
+      console.log(
+        `  • Combined audio length: ${(totalLength / sampleRate).toFixed(2)}s`,
+      );
+      console.log(`  • Combined file: batch_combined.wav`);
+    }
+  }
+}
+
+async function createTTSInstance(apiKey: string): Promise<TTS> {
+  return TTS.create({
+    remoteConfig: {
+      apiKey,
+      defaultTimeout: '30s',
+      synthesisConfig: {
+        modelId: DEFAULT_TTS_MODEL_ID,
+        postprocessing: { sampleRate: SAMPLE_RATE },
+        inference: { temperature: 1.0, speakingRate: 1.0 },
+      },
+    },
+  });
+}
+
+function makeSynthesisConfig() {
+  return {
+    modelId: DEFAULT_TTS_MODEL_ID,
+    postprocessing: { sampleRate: SAMPLE_RATE },
+    inference: { temperature: 1.0, speakingRate: 1.0 },
+    timestampType: TimestampType.Word,
+  };
+}
+
+function logTimestamps(timestamps: AudioChunkTimestamp[]) {
+  console.log('\nTimestamps:');
+  for (const ts of timestamps) {
+    console.log(
+      `  [${ts.startTime.toFixed(3)}s - ${ts.endTime.toFixed(3)}s] "${ts.token}"`,
+    );
+  }
+}
+
+async function saveTimestamps(
+  timestamps: AudioChunkTimestamp[],
+  outputPath: string,
+): Promise<void> {
+  const outputDir = path.dirname(outputPath);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  fs.writeFileSync(outputPath, JSON.stringify(timestamps, null, 2));
+  console.log(`✓ Timestamps saved to: ${outputPath}`);
+}
+
+async function saveAudioToWav(
+  audio: { data: Float32Array; sampleRate: number },
+  outputPath: string,
+): Promise<void> {
+  // Ensure output directory exists
+  const outputDir = path.dirname(outputPath);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  // Convert Float32Array to proper format for wav-encoder
+  // Create a new Float32Array with explicit ArrayBuffer
+  const audioData = new Float32Array(new ArrayBuffer(audio.data.length * 4));
+  audioData.set(audio.data);
+
+  const audioObject = {
+    sampleRate: audio.sampleRate,
+    channelData: [audioData],
+  };
+
+  const buffer = await wavEncoder.encode(audioObject);
+  fs.writeFileSync(outputPath, Buffer.from(buffer));
+
+  console.log(`✓ Audio saved to: ${outputPath}`);
+}
+
 function parseArgs(): {
+  mode: string;
   text: string;
-  voiceName: string;
-  languageCode?: string;
-  configType?: 'inworld';
+  voice: string;
+  outputDir: string;
   apiKey: string;
 } {
   const argv = minimist(process.argv.slice(2));
 
   if (argv.help) {
-    console.log(usage);
-    process.exit(0);
+    exitWithError(usage);
   }
 
-  const text = argv._?.join(' ') || '';
-  const voiceName = argv.voiceName || DEFAULT_VOICE_ID;
-  const languageCode = argv.languageCode;
-  const configType = argv.configType;
+  const mode = argv.mode || 'basic';
+  const text =
+    argv.text ||
+    argv._?.join(' ') ||
+    'Hello! This is a text-to-speech demonstration using the Inworld SDK.';
+  const voice = argv.voice || DEFAULT_VOICE_ID;
+  const outputDir =
+    argv.outputDir || path.join(__dirname, '..', '..', 'data-output', 'tts');
   const apiKey = process.env.INWORLD_API_KEY || '';
 
-  if (!text) {
-    throw new Error(`You need to provide text.\n${usage}`);
-  }
-
   if (!apiKey) {
-    throw new Error(
+    exitWithError(
       `You need to set INWORLD_API_KEY environment variable.\n${usage}`,
+      1,
     );
   }
 
-  if (configType && !['inworld', 'elevenlabs'].includes(configType)) {
-    throw new Error(
-      `Invalid config type: ${configType}. Must be 'inworld' or 'elevenlabs'.\n${usage}`,
-    );
-  }
-
-  return { text, voiceName, languageCode, configType, apiKey };
+  return { mode, text, voice, outputDir, apiKey };
 }
 
 function done() {
