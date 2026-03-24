@@ -65,6 +65,7 @@ async function run() {
     modelName,
     provider,
     apiKey,
+    stream,
     temperature,
     topP,
     fallbackModels,
@@ -111,6 +112,7 @@ async function run() {
 
   const llmRoutingNode = new RemoteLLMChatNode({
     id: 'llm-routing-node',
+    stream,
   });
 
   const graph = new GraphBuilder({
@@ -396,7 +398,7 @@ function parseArgs(): {
   const modelName = argv.modelName || DEFAULT_LLM_MODEL_NAME;
   const provider = argv.provider || DEFAULT_LLM_PROVIDER;
   const apiKey = process.env.INWORLD_API_KEY || '';
-  const stream = argv.stream !== undefined ? argv.stream === 'true' : true;
+  const stream = argv.stream === true || argv.stream === 'true';
   const temperature =
     argv.temperature !== undefined ? parseFloat(argv.temperature) : 0.7;
   const topP = argv.topP !== undefined ? parseFloat(argv.topP) : 1.0;
