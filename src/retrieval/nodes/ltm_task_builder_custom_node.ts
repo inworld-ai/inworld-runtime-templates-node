@@ -51,8 +51,16 @@ export class LTMTaskBuilderCustomNode extends CustomNode {
   }
 
   async process(_context: ProcessContext, ...inputs: any[]): Promise<LTMTasks> {
-    const input = inputs[0];
-    const request = (input?.value || input) as MemoryUpdaterRequest;
+    let request = inputs[0];
+    while (
+      request &&
+      typeof request === 'object' &&
+      'value' in request &&
+      !request.memorySnapshot
+    ) {
+      request = request.value;
+    }
+    request = request as MemoryUpdaterRequest;
     const flashMemoryRecords = request.memorySnapshot.flashMemory;
     const longTermMemoryRecords = request.memorySnapshot.longTermMemory;
 

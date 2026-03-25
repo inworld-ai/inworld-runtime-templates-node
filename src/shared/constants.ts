@@ -27,6 +27,7 @@ export const DEFAULT_VAD_MODEL_PATH = path.join(
   'models',
   'silero_vad.onnx',
 );
+export const DEFAULT_LOCAL_STREAMING_VAD_MODEL_PATH = DEFAULT_VAD_MODEL_PATH;
 export const TEXT_CONFIG = {
   max_new_tokens: 2500,
   max_prompt_length: 100,
@@ -36,6 +37,7 @@ export const TEXT_CONFIG = {
   frequency_penalty: 0,
   presence_penalty: 0,
   stop_sequences: [] as string[],
+  logit_bias: [] as Array<{ tokenId: string; biasValue: number }>,
 };
 
 export function convertTextConfigToInterface(
@@ -50,6 +52,7 @@ export function convertTextConfigToInterface(
     frequencyPenalty: config.frequency_penalty,
     presencePenalty: config.presence_penalty,
     stopSequences: config.stop_sequences,
+    logitBias: config.logit_bias,
   };
 }
 
@@ -109,26 +112,6 @@ export const INTENTS = [
 
 export const DEFAULT_TOP_K = 2;
 export const DEFAULT_THRESHOLD = 0.5;
-export const DEFAULT_KNOWLEDGE_QUERY = 'How often are the Olympics held?';
-export const KNOWLEDGE_RECORDS = [
-  'The Olympics are staged every four years.',
-  'Our solar system includes the Sun, eight planets, five officially named dwarf planets, hundreds of moons, and thousands of asteroids and comets.',
-  'Nightingales have an astonishingly rich repertoire, able to produce over 1000 different sounds, compared with just 340 by skylarks and about 100 by blackbirds.',
-];
-
-export const KNOWLEDGE_COMPILE_CONFIG = {
-  parsing_config: {
-    max_chars_per_chunk: 200,
-    max_chunks_per_document: 100,
-  },
-} as any;
-
-export const KNOWLEDGE_COMPILE_CONFIG_SDK = {
-  parsingConfig: {
-    maxCharsPerChunk: 200,
-    maxChunksPerDocument: 100,
-  },
-} as any;
 
 type ToolJsonSchema = {
   type: 'object';

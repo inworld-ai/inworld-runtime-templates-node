@@ -1,6 +1,6 @@
 {
   "name": "@inworld/runtime-templates",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "license": "SEE LICENSE IN LICENSE.md and LICENSE-CPP-BINARIES.md",
   "scripts": {
     "copy:license": "cp ../../LICENSE.md . && cp ../../LICENSE-CPP-BINARIES.md ./",
@@ -14,7 +14,6 @@
     "basic-prompt-builder": "ts-node src/primitives/basic_prompt_builder.ts",
     "basic-text-classifier": "ts-node src/primitives/basic_text_classifier.ts",
     "basic-keyword-matcher": "ts-node src/primitives/basic_keyword_matcher.ts",
-    "basic-knowledge": "ts-node src/primitives/basic_knowledge.ts",
     "basic-llm": "ts-node src/primitives/basic_llm.ts",
     "basic-stt": "ts-node src/primitives/basic_stt.ts",
     "basic-tts": "ts-node src/primitives/basic_tts.ts",
@@ -30,7 +29,6 @@
     "node-tts": "ts-node src/voice/text_to_speech.ts",
     "node-intent": "ts-node src/retrieval/intent_matching.ts",
     "node-text-chunking-and-aggregator": "ts-node src/text_processing/text_chunking.ts",
-    "node-knowledge": "ts-node src/retrieval/knowledge_retrieval.ts",
     "node-mcp-call-tool": "ts-node src/llm/tools/node_mcp_call_tool.ts",
     "node-mcp-list-tools": "ts-node src/llm/tools/node_mcp_list_tools.ts",
     "node-random-canned": "ts-node src/llm/random_canned_responses.ts",
@@ -42,6 +40,7 @@
     "node-subgraph": "ts-node src/text_processing/node_subgraph.ts",
     "node-custom-reverse": "ts-node src/text_processing/simple_reverse.ts",
     "node-llm-chat-component-registry": "ts-node src/llm/llm_component_registry.ts",
+    "node-llm-interface-overloads": "ts-node src/llm/llm_interface_overloads.ts",
     "node-custom-llm-stream": "ts-node src/streaming/llm_streaming.ts",
     "node-custom-llm-stream-with-datastore": "ts-node src/streaming/custom_llm_stream_with_datastore.ts",
     "node-custom-mcp": "ts-node src/llm/tools/node_custom_mcp.ts",
@@ -53,7 +52,6 @@
     "data-stream-with-metadata": "ts-node src/streaming/data_stream_with_metadata.ts",
     "conditional-edges-after-llm": "ts-node src/llm/routing/conditional_edges_after_llm.ts",
     "conditional-edges-after-intent": "ts-node src/retrieval/intent_routing.ts",
-    "conditional-edges-after-knowledge": "ts-node src/retrieval/knowledge_routing.ts",
     "custom-conditional-edges-after-llm": "ts-node src/llm/routing/custom_conditional_edges_after_llm.ts",
     "node-custom-advanced": "ts-node src/text_processing/advanced_text_transform.ts",
     "character-generator": "ts-node src/advanced/character_generator.ts",
@@ -68,7 +66,9 @@
     "error-handling-fallback": "ts-node src/error_handling/fallback_routing.ts",
     "error-handling-circuit-breaker": "ts-node src/error_handling/circuit_breaker_cooldown.ts",
     "error-handling-advanced": "ts-node src/error_handling/advanced_combined.ts",
-    "node-transform": "ts-node src/text_processing/transform_node.ts"
+    "node-transform": "ts-node src/text_processing/transform_node.ts",
+    "llm-reasoning": "ts-node src/llm/llm_reasoning.ts",
+    "llm-cache-control": "ts-node src/llm/llm_cache_control.ts"
   },
   "devDependencies": {
     "@types/minimist": "^1.2.5",
@@ -78,7 +78,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@inworld/runtime": "^1.0.2",
+    "@inworld/runtime": "^1.0.4",
     "dotenv": "^17.2.3",
     "minimist": "^1.2.8",
     "uuid": "^11.1.0",
