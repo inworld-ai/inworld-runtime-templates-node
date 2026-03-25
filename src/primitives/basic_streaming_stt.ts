@@ -1,17 +1,15 @@
 /**
- * Streaming STT Example - Cloud Version
+ * Streaming STT Example - Cloud and Local Modes
  *
  * This example demonstrates real-time speech-to-text transcription using
- * the StreamingSTT primitive with cloud providers (AssemblyAI).
- *
- * Usage:
- *   npm run basic-streaming-stt -- --useCloud
+ * the StreamingSTT primitive with either cloud providers (AssemblyAI) or
+ * local STT/VAD model files.
  *
  * Configuration values:
  * - Sample rate: 16000 Hz
  * - Frame size: 2048 samples (128ms chunks)
  * - Default silence threshold: 3000ms
- * - Activity detection: endOfTurnConfidenceThreshold=0.5,
+ * - Cloud activity detection: endOfTurnConfidenceThreshold=0.5,
  *   minEndOfTurnSilenceWhenConfident=500ms, maxTurnSilence=2000ms
  */
 
@@ -19,44 +17,68 @@ import 'dotenv/config';
 
 import { stopInworldRuntime } from '@inworld/runtime';
 import { float32ToBytes, InworldError } from '@inworld/runtime/common';
-import type { RemoteStreamingSTTConfig } from '@inworld/runtime/primitives/speech';
-import { StreamingSTT } from '@inworld/runtime/primitives/speech';
+import { DeviceType } from '@inworld/runtime/core';
+import {
+  type LocalStreamingSTTConfig,
+  type RemoteStreamingSTTConfig,
+  StreamingSTT,
+  type StreamingSTTCreationConfig,
+} from '@inworld/runtime/primitives/speech';
 import * as fs from 'fs';
 import * as path from 'path';
+
+import {
+  DEFAULT_LOCAL_STREAMING_VAD_MODEL_PATH,
+  DEFAULT_STREAMING_STT_MODEL_ID,
+  Modes,
+} from '../shared/constants';
 
 const WavDecoder = require('wav-decoder');
 const minimist = require('minimist');
 
 const usage = `
-Streaming STT Example - Cloud Version
+Streaming STT Example - Cloud and Local Modes
 
 Usage:
-  npm run basic-streaming-stt -- --useCloud
+  npm run basic-streaming-stt -- --mode=cloud
+  npm run basic-streaming-stt -- --mode=local --sttModelPath=/path/to/local/stt/model
 
 Options:
-  --useCloud              Use cloud streaming STT (requires INWORLD_API_KEY)
-  --model                 STT model ID (default: assemblyai/universal-streaming-multilingual)
-  --providerConfig        Provider config type: 'assemblyai' (default)
+  --mode                  cloud|local (default: cloud)
+  --model                 Cloud STT model ID (default: ${DEFAULT_STREAMING_STT_MODEL_ID})
+  --providerConfig        Cloud provider config type: 'assemblyai' (default)
   --audioFile             Path to audio file (default: fixtures/stt/audio.wav)
   --silenceThreshold      Silence threshold in ms (default: 3000)
+  --sttModelPath          Local STT model path (optional when auto-discovered)
+  --vadModelPath          Local VAD model path (default: ${DEFAULT_LOCAL_STREAMING_VAD_MODEL_PATH})
   --help                  Show this help message
 
 Available STT models:
-  assemblyai/universal-streaming-multilingual  (default)
+  ${DEFAULT_STREAMING_STT_MODEL_ID}  (cloud default)
   assemblyai/u3-rt-pro
   inworld/inworld-stt-1
 
 Environment:
   INWORLD_API_KEY         Required for cloud STT
+  STREAMING_STT_LOCAL_MODEL_PATH  Optional default local STT model path
 `;
 
 const SILENCE_THRESHOLD_MS = 3000;
-const ASSEMBLYAI_MODEL_ID = 'assemblyai/universal-streaming-multilingual';
 const ASSEMBLYAI_ACTIVITY_DETECTION = {
   endOfTurnConfidenceThreshold: 0.5,
   minEndOfTurnSilenceWhenConfidentMs: 500,
   maxTurnSilenceMs: 2000,
 };
+const LOCAL_MODELS_DIR = path.join(__dirname, '..', 'shared', 'models');
+const LOCAL_STT_MODEL_ENV_VAR = 'STREAMING_STT_LOCAL_MODEL_PATH';
+const NON_STT_MODEL_ENTRIES = new Set([
+  'pipecat_smart_turn_v3.onnx',
+  'silero_vad.onnx',
+  'turn_detection',
+]);
+const CLOUD_MODE = 'cloud';
+const VALID_MODES = [CLOUD_MODE, Modes.LOCAL] as const;
+type StreamingSTTMode = (typeof VALID_MODES)[number];
 
 run();
 
@@ -86,11 +108,13 @@ async function run() {
 }
 
 interface Args {
-  useCloud: boolean;
+  mode: StreamingSTTMode;
   model: string;
   providerConfig: string;
   audioFile: string;
   silenceThreshold: number;
+  sttModelPath: string;
+  vadModelPath: string;
   apiKey: string;
   help: boolean;
 }
@@ -100,12 +124,18 @@ interface Args {
  */
 async function runStreamingSTT(args: Args): Promise<void> {
   validateArgs(args);
-  const config = buildRemoteConfig(args);
+  const config = buildConfig(args);
 
   console.log('\n=== Streaming STT Example ===\n');
-  console.log('Mode: Cloud (Remote)');
-  console.log(`Provider: ${args.providerConfig || 'assemblyai'}`);
-  console.log(`Model: ${args.model}`);
+  if (args.mode === CLOUD_MODE) {
+    console.log('Mode: Cloud (Remote)');
+    console.log(`Provider: ${args.providerConfig || 'assemblyai'}`);
+    console.log(`Model: ${args.model}`);
+  } else {
+    console.log('Mode: Local');
+    console.log(`STT Model Path: ${args.sttModelPath}`);
+    console.log(`VAD Model Path: ${args.vadModelPath}`);
+  }
   console.log(`Silence Threshold: ${args.silenceThreshold}ms`);
   console.log(`Audio File: ${args.audioFile}\n`);
 
@@ -161,9 +191,31 @@ async function runStreamingSTT(args: Args): Promise<void> {
 }
 
 function validateArgs(args: Args): void {
-  if (!args.useCloud) {
-    throw new Error('This example requires --useCloud flag for cloud STT.');
+  if (!VALID_MODES.includes(args.mode)) {
+    throw new Error(
+      `Invalid mode: ${args.mode}. Valid modes: ${VALID_MODES.join(', ')}`,
+    );
   }
+
+  if (!fs.existsSync(args.audioFile)) {
+    throw new Error(`Audio file not found: ${args.audioFile}`);
+  }
+
+  if (args.mode === Modes.LOCAL) {
+    if (!args.sttModelPath) {
+      throw new Error(
+        `Local mode requires --sttModelPath or a discoverable default local STT model. Checked ${LOCAL_STT_MODEL_ENV_VAR} and bundled assets in ${LOCAL_MODELS_DIR}.`,
+      );
+    }
+    if (!fs.existsSync(args.sttModelPath)) {
+      throw new Error(`Local STT model not found: ${args.sttModelPath}`);
+    }
+    if (!fs.existsSync(args.vadModelPath)) {
+      throw new Error(`Local VAD model not found: ${args.vadModelPath}`);
+    }
+    return;
+  }
+
   if (args.providerConfig && args.providerConfig !== 'assemblyai') {
     throw new Error(
       "Invalid providerConfig. Currently only 'assemblyai' is supported.",
@@ -172,6 +224,12 @@ function validateArgs(args: Args): void {
   if (!args.apiKey) {
     throw new Error('Cloud STT requires INWORLD_API_KEY environment variable.');
   }
+}
+
+function buildConfig(args: Args): StreamingSTTCreationConfig {
+  return args.mode === Modes.LOCAL
+    ? buildLocalConfig(args)
+    : buildRemoteConfig(args);
 }
 
 function buildRemoteConfig(args: Args): RemoteStreamingSTTConfig {
@@ -186,6 +244,20 @@ function buildRemoteConfig(args: Args): RemoteStreamingSTTConfig {
       speechConfig: {
         activityDetectionConfig: ASSEMBLYAI_ACTIVITY_DETECTION,
       },
+    },
+  };
+}
+
+function buildLocalConfig(args: Args): LocalStreamingSTTConfig {
+  console.log('Using local streaming STT configuration.');
+
+  return {
+    sttModelPath: args.sttModelPath,
+    vadModelPath: args.vadModelPath,
+    sttDevice: { type: DeviceType.CPU, index: 0 },
+    vadDevice: { type: DeviceType.CPU, index: 0 },
+    defaultConfig: {
+      silenceThresholdMs: args.silenceThreshold,
     },
   };
 }
@@ -304,12 +376,19 @@ function resolveSilencePaddingMs(value?: number): number {
 
 function parseArgs(): Args {
   const argv = minimist(process.argv.slice(2), {
-    boolean: ['useCloud', 'help'],
-    string: ['providerConfig', 'audioFile', 'model'],
+    boolean: ['help'],
+    string: [
+      'mode',
+      'providerConfig',
+      'audioFile',
+      'model',
+      'sttModelPath',
+      'vadModelPath',
+    ],
     default: {
-      useCloud: false,
+      mode: CLOUD_MODE,
       providerConfig: '',
-      model: ASSEMBLYAI_MODEL_ID,
+      model: DEFAULT_STREAMING_STT_MODEL_ID,
       audioFile: path.join(
         __dirname,
         '..',
@@ -319,17 +398,25 @@ function parseArgs(): Args {
         'audio.wav',
       ),
       silenceThreshold: SILENCE_THRESHOLD_MS,
+      sttModelPath: resolveDefaultLocalSttModelPath(),
+      vadModelPath: DEFAULT_LOCAL_STREAMING_VAD_MODEL_PATH,
       help: false,
     },
   });
 
+  const silenceThreshold = Number.parseFloat(String(argv.silenceThreshold));
+
   return {
-    useCloud: argv.useCloud,
+    mode: argv.mode,
     model: argv.model,
     providerConfig: argv.providerConfig,
     audioFile: argv.audioFile,
-    silenceThreshold: argv.silenceThreshold,
-    apiKey: process.env.INWORLD_API_KEY!,
+    silenceThreshold: Number.isFinite(silenceThreshold)
+      ? silenceThreshold
+      : SILENCE_THRESHOLD_MS,
+    sttModelPath: argv.sttModelPath,
+    vadModelPath: argv.vadModelPath,
+    apiKey: process.env.INWORLD_API_KEY || '',
     help: argv.help,
   };
 }
@@ -337,6 +424,32 @@ function parseArgs(): Args {
 function done() {
   console.log('\nReceived signal, stopping...');
   process.exit(0);
+}
+
+function resolveDefaultLocalSttModelPath(): string {
+  const configuredPath = process.env[LOCAL_STT_MODEL_ENV_VAR];
+  if (configuredPath) {
+    return path.isAbsolute(configuredPath)
+      ? configuredPath
+      : path.resolve(process.cwd(), configuredPath);
+  }
+
+  return discoverBundledLocalSttModelPath() || '';
+}
+
+function discoverBundledLocalSttModelPath(): string | undefined {
+  if (!fs.existsSync(LOCAL_MODELS_DIR)) {
+    return undefined;
+  }
+
+  const candidate = fs
+    .readdirSync(LOCAL_MODELS_DIR, { withFileTypes: true })
+    .find(
+      (entry) =>
+        !entry.name.startsWith('.') && !NON_STT_MODEL_ENTRIES.has(entry.name),
+    );
+
+  return candidate ? path.join(LOCAL_MODELS_DIR, candidate.name) : undefined;
 }
 
 process.on('SIGINT', done);

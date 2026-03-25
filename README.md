@@ -89,7 +89,6 @@ inworld-runtime-templates-node/
 - **Text-to-Speech (TTS)**: Generate audio from text with streaming support
 
 ### Retrieval Templates (`src/retrieval/`)
-- **RAG**: Knowledge retrieval and question answering
 - **Intent Matching**: Classify user intents and route accordingly
 - **Long-term Memory**: Persistent conversation memory
 
@@ -125,10 +124,8 @@ Low-level SDK components for direct usage:
 1. `src/voice/speech_to_text.ts` - STT
 2. `src/voice/text_to_speech.ts` - TTS
 
-### Adding RAG?
-1. `src/retrieval/knowledge_retrieval.ts` - Basic RAG
-2. `src/retrieval/intent_matching.ts` - Intent matching
-3. `src/retrieval/knowledge_routing.ts` - Route based on context
+### Adding Retrieval?
+1. `src/retrieval/intent_matching.ts` - Intent matching
 
 ## Troubleshooting
 
