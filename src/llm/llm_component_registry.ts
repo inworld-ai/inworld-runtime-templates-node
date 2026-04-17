@@ -115,8 +115,15 @@ async function run() {
       Content: (data: GraphTypes.Content) => {
         console.log(`Template: Result: ${data.content}`);
       },
-      default: (data: { llmResult: string; llmEnhancedResult: string }) => {
-        console.error('Unprocessed response:', data);
+      default: (data: any) => {
+        const obj = data?.value ?? data;
+        if (obj?.llmResult !== undefined) {
+          console.log(`Template: Result count: 1`);
+          console.log(`Template: Result: ${obj.llmResult}`);
+          console.log(`Template: Enhanced Result: ${obj.llmEnhancedResult}`);
+        } else {
+          console.log('Unprocessed response:', data);
+        }
       },
       error: (error) => {
         console.error('Graph Error:', error);

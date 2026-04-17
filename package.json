@@ -1,6 +1,6 @@
 {
   "name": "@inworld/runtime-templates",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "license": "SEE LICENSE IN LICENSE.md and LICENSE-CPP-BINARIES.md",
   "scripts": {
     "copy:license": "cp ../../LICENSE.md . && cp ../../LICENSE-CPP-BINARIES.md ./",
@@ -47,12 +47,16 @@
     "node-custom-tts-stream": "ts-node src/voice/tts_streaming.ts",
     "node-tts-stream-timestamps": "ts-node src/voice/tts_stream_with_timestamps.ts",
     "node-custom-tts": "ts-node src/voice/tts_with_components.ts",
+    "node-vad-custom": "ts-node src/voice/vad_in_custom_node.ts",
+    "node-turn-detector-custom": "ts-node src/voice/turn_detector_in_custom_node.ts",
     "simple-reverse-stream": "ts-node src/streaming/text_reverse_stream.ts",
     "simple-audio-join-stream": "ts-node src/streaming/audio_join_stream.ts",
     "data-stream-with-metadata": "ts-node src/streaming/data_stream_with_metadata.ts",
     "conditional-edges-after-llm": "ts-node src/llm/routing/conditional_edges_after_llm.ts",
     "conditional-edges-after-intent": "ts-node src/retrieval/intent_routing.ts",
+    "conditional-edges-with-datastore": "ts-node src/llm/routing/conditional_edges_with_datastore.ts",
     "custom-conditional-edges-after-llm": "ts-node src/llm/routing/custom_conditional_edges_after_llm.ts",
+    "custom-conditional-edges-with-context": "ts-node src/llm/routing/custom_conditional_edges_with_context.ts",
     "node-custom-advanced": "ts-node src/text_processing/advanced_text_transform.ts",
     "character-generator": "ts-node src/advanced/character_generator.ts",
     "telemetry-capabilities": "ts-node src/observability/telemetry_capabilities.ts",
@@ -72,13 +76,13 @@
   },
   "devDependencies": {
     "@types/minimist": "^1.2.5",
-    "@types/node": "^22.19.15",
+    "@types/node": "^22.19.17",
     "@types/ws": "^8.5.14",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@inworld/runtime": "^1.0.4",
+    "@inworld/runtime": "^1.0.6",
     "dotenv": "^17.2.3",
     "minimist": "^1.2.8",
     "uuid": "^11.1.0",

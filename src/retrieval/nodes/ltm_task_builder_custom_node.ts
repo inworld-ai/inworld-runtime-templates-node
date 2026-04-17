@@ -33,6 +33,14 @@ interface LTMTaskBuilderConfig {
   maxTopicSummaryLenToAppend: number;
 }
 
+/** Ensures a value is an array, converting object-like iterables if needed. */
+function ensureArray<T>(val: T[] | undefined | null | object): T[] {
+  if (Array.isArray(val)) return val;
+  if (val == null) return [];
+  if (typeof val === 'object') return Object.values(val) as T[];
+  return [];
+}
+
 /**
  * Task Builder Node - decides which flash memories to summarize and which to keep.
  * Groups memories by topic and determines if LLM summarization is needed.
@@ -61,8 +69,12 @@ export class LTMTaskBuilderCustomNode extends CustomNode {
       request = request.value;
     }
     request = request as MemoryUpdaterRequest;
-    const flashMemoryRecords = request.memorySnapshot.flashMemory;
-    const longTermMemoryRecords = request.memorySnapshot.longTermMemory;
+    const flashMemoryRecords = ensureArray<MemoryRecord>(
+      request.memorySnapshot?.flashMemory,
+    );
+    const longTermMemoryRecords = ensureArray<MemoryRecord>(
+      request.memorySnapshot?.longTermMemory,
+    );
 
     // Split flash memories: keep recent N, summarize the rest
     const { flashToSummarize, newFlashMemory } = this.splitFlashMemory(

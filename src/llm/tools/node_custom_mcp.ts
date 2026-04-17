@@ -92,12 +92,33 @@ async function run() {
           toolCalls: content.toolCalls,
         },
       ];
-      for (const result of toolResults.toolCallResults) {
+      // Tool results come back in the same order as the original tool calls
+      // (that's the `ai.inworld.runtime.v1.library.llm.ToolCallResult` proto
+      // contract — it carries no id of its own). Zip by index so every
+      // tool-role message carries the matching `tool_call_id`; OpenAI rejects
+      // the follow-up with HTTP 400 otherwise. Fail fast on count/id
+      // mismatches rather than emitting an invalid request.
+      const toolCallResults = toolResults.toolCallResults;
+      const toolCalls = content.toolCalls ?? [];
+      if (toolCallResults.length !== toolCalls.length) {
+        throw new Error(
+          `ToolResultsToLLMRequestNode: tool-call count (${toolCalls.length}) ` +
+            `does not match tool-result count (${toolCallResults.length}).`,
+        );
+      }
+      toolCallResults.forEach((result, i) => {
+        const id = toolCalls[i]?.id;
+        if (!id) {
+          throw new Error(
+            `ToolResultsToLLMRequestNode: missing tool_call id at index ${i}.`,
+          );
+        }
         messages.push({
           role: 'tool',
           content: result.result,
+          toolCallId: id,
         });
-      }
+      });
       return new GraphTypes.LLMChatRequest({ messages });
     }
   }
