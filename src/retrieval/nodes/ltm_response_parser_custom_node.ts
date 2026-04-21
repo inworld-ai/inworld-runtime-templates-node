@@ -41,6 +41,14 @@ interface LTMResponseParserConfig {
   embedderComponentId: string;
 }
 
+/** Ensures a value is an array, converting object-like iterables if needed. */
+function ensureArray<T>(val: T[] | undefined | null | object): T[] {
+  if (Array.isArray(val)) return val;
+  if (val == null) return [];
+  if (typeof val === 'object') return Object.values(val) as T[];
+  return [];
+}
+
 /**
  * Response Parser Node - parses LLM responses, generates embeddings, and merges memories.
  * Takes LLM summarization responses and creates final memory snapshot.
@@ -72,11 +80,11 @@ export class LTMResponseParserCustomNode extends CustomNode {
     // Merge with existing long-term memories
     const mergedRecords = this.mergeMemoryRecords(
       newMemoryRecords,
-      originalRequest.memorySnapshot.longTermMemory,
+      ensureArray(originalRequest.memorySnapshot?.longTermMemory),
     );
 
     return {
-      flashMemory: tasks.newFlashMemory,
+      flashMemory: ensureArray(tasks.newFlashMemory),
       longTermMemory: mergedRecords,
     };
   }
@@ -88,20 +96,22 @@ export class LTMResponseParserCustomNode extends CustomNode {
     const newMemoryRecordsByTopic = new Map<string, MemoryRecord>();
 
     // Add simple concatenations first
-    for (const record of tasks.newLongTermMemory) {
+    for (const record of ensureArray(tasks.newLongTermMemory)) {
       if (record.text && record.topics.length > 0) {
         newMemoryRecordsByTopic.set(record.topics[0], record);
       }
     }
 
     // Add LLM-summarized records
-    if (tasks.summarizationTasks.length !== responses.responses.length) {
+    const summarizationTasks = ensureArray(tasks.summarizationTasks);
+    const responsesList = ensureArray(responses?.responses);
+    if (summarizationTasks.length !== responsesList.length) {
       throw new Error('Mismatch between summarization tasks and responses');
     }
 
-    for (let i = 0; i < tasks.summarizationTasks.length; i++) {
-      const task = tasks.summarizationTasks[i];
-      const response = responses.responses[i];
+    for (let i = 0; i < summarizationTasks.length; i++) {
+      const task = summarizationTasks[i];
+      const response = responsesList[i];
 
       if (response.content) {
         newMemoryRecordsByTopic.set(task.topic, {
@@ -146,7 +156,7 @@ export class LTMResponseParserCustomNode extends CustomNode {
     const mergedByTopic = new Map<string, MemoryRecord>();
 
     // Add old records
-    for (const record of oldRecords) {
+    for (const record of ensureArray(oldRecords)) {
       if (record.topics.length > 0) {
         mergedByTopic.set(record.topics[0], record);
       }
